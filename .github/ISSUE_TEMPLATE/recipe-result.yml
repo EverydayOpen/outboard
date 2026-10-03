@@ -1,0 +1,55 @@
+name: Tried a move on a real Mac (tester report)
+description: Report what happened when you tried one catalogue entry, so its "Not yet tried on a real Mac." line can be closed or kept.
+title: "Tried: "
+labels: ["tester-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A report here is what moves an entry from "Not yet tried on a real Mac." to tried. It goes into `docs/VERIFY_LOG.md`
+        with your name or handle, only if you agree below. Say what happened, including when nothing went wrong.
+        Never paste file contents.
+  - type: input
+    id: recipe
+    attributes:
+      label: Which catalogue entry?
+      placeholder: Xcode build data
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: The size moved, how long the copy took in your own words, whether you unplugged the drive on purpose, whether you rolled back or confirmed.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What you saw
+      description: Did the app keep working with the new location? What did it do when the drive was away? Did the guard say anything? Did the comparison report any difference?
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: macOS version, chip, drive and how it is connected
+      placeholder: macOS 26.0, Apple silicon, Thunderbolt NVMe enclosure, APFS encrypted
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Outboard version
+      placeholder: 0.1.0-beta.1
+    validations:
+      required: true
+  - type: dropdown
+    id: credit
+    attributes:
+      label: May the project name you in docs/VERIFY_LOG.md?
+      options:
+        - Yes, use my GitHub handle
+        - No, list it without a name
+    validations:
+      required: true

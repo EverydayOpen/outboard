@@ -1,0 +1,10 @@
+{
+  "name": "Outboard",
+  "baseURL": "https://everydayopen.github.io/outboard",
+  "tagline": "A storage planner for Macs with an external SSD. Measure, move with a check, keep the original until you say so.",
+  "releasesRepo": "EverydayOpen/outboard",
+  "dmgName": "Outboard.dmg",
+  "minMacOS": "13",
+  "owner": "EverydayOpen",
+  "placeholders": []
+}

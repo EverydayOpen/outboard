@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<!-- One instance only (BUILD_PLAN section 3, invariant I5): only one process may mutate at a time. tools/safety_greps.sh checks the key is here.
+	     VERIFY: that it also blocks a second copy launched from another path. -->
+	<key>LSMultipleInstancesProhibited</key>
+	<true/>
+	<!-- A regular window app with a Dock icon (BUILD_PLAN section 1); the optional menu bar item is a MenuBarExtra scene, not an agent app. -->
+	<key>LSUIElement</key>
+	<false/>
+	<!-- The one usage string. macOS may ask once before a non-sandboxed app reads or writes a removable volume. VERIFY on a real Mac whether it
+	     applies to a fixed external SSD, and whether the answer is a prompt or a silent denial (BUILD_PLAN section 12, item 10). Anything
+	     else in a *UsageDescription key fails release.yml's bundle check: Outboard asks for no other permission. -->
+	<key>NSRemovableVolumesUsageDescription</key>
+	<string>Outboard copies a folder to the external drive you choose, compares the copy file by file and keeps its own notes on that drive.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>© 2026 EverydayOpen. Free and open source (MIT License).</string>
+</dict>
+</plist>

@@ -1,0 +1,28 @@
+# {{name}}
+
+> {{tagline}}
+
+{{name}} is a free, open-source Mac app (MIT License; macOS {{minMacOS}} or later, Apple silicon and Intel). It measures the big folders that apps keep on your Mac, copies the ones with a known method to an external drive you choose, compares every file by size and SHA-256, keeps the original (renamed) until you confirm, and writes every step to a log. A Drive Guard, while the app runs, announces a missing drive and puts a note where the folder was. {{name}} is not affiliated with or endorsed by any app it lists. (no-claim-ok: this sentence says we make no such claim)
+
+Status: {{statusShort}} {{statusNote}} {{triedLine}}
+
+Trust box
+- No network, no telemetry, no account, no helper, no administrator password. It makes no claim about speed and does not configure new installs automatically.
+- Nothing is deleted: the original is renamed and, after you confirm, moved to the Trash. If the log cannot be written, nothing moves.
+- {{autoCount}} moves it does itself (hidden in the app until you turn on "Show moves not yet tried on a real Mac"), {{guidedCount}} guided by the app itself, {{neverCount}} refused with the reason shown.
+- Never moved: Mail, Safari, Messages and Notes data, iCloud Drive, sandboxed containers, Homebrew, your home folder, the whole Caches folder, app bundles.
+- It cannot stop you unplugging a drive or make that harmless. What each app does when it finds a note instead of its folder has not been tried on a real Mac.
+
+- Download: {{baseURL}}/download/
+- Source and support: {{repoURL}}
+- Report a move that went wrong: {{moveProblemURL}}
+
+## Pages
+
+{{pageList}}
+
+## Feeds
+
+- [Changelog RSS]({{baseURL}}/feed.xml)
+
+{{name}} is not affiliated with or endorsed by any app it lists. App names appear only to say what {{name}} knows about. (no-claim-ok: this sentence says we make no such claim)

@@ -1,0 +1,57 @@
+{
+  "affiliation": "Outboard is not affiliated with or endorsed by any app it lists.",
+  "cards": [
+    {
+      "body": "Outboard finds the big folders that apps keep on your Mac. For apps where it's known to work, it moves them to an external drive you choose. It looks first, and changes nothing until you say so.",
+      "buttonNote": null,
+      "buttonTitle": null,
+      "emphasis": null,
+      "id": "what-this-does",
+      "title": "What this does"
+    },
+    {
+      "body": "Xcode build data. iPhone and iPad backups. Ollama and Hugging Face models. For Photos, Music, Final Cut Pro and Steam it shows you the steps; those apps do the moving themselves.",
+      "buttonNote": null,
+      "buttonTitle": null,
+      "emphasis": null,
+      "id": "what-can-move",
+      "title": "What can move"
+    },
+    {
+      "body": "Mail, Safari and Messages. Anything inside iCloud Drive. Apps' sandboxed data. Homebrew. Your home folder. Your whole Caches folder. These can break an app or lock you out, so Outboard won't touch them.",
+      "buttonNote": null,
+      "buttonTitle": null,
+      "emphasis": null,
+      "id": "what-never-moves",
+      "title": "What never moves"
+    },
+    {
+      "body": "It copies the folder to your drive, then checks every file against the original. Only if every file matches does it switch the app over. Your original stays on your Mac, renamed, until you've tried the app and said it works. Nothing is deleted without you.",
+      "buttonNote": null,
+      "buttonTitle": null,
+      "emphasis": null,
+      "id": "how-a-move-works",
+      "title": "How a move works"
+    },
+    {
+      "body": "The apps that use it can't see their data until it's back. While Outboard is running it notices, puts a note where the data was so apps stop instead of starting fresh, and puts things back when the drive returns. If the drive is removed without ejecting, you'll be asked to check your files first.",
+      "buttonNote": "Without it, an unplugged drive leaves apps pointing at nothing until you open Outboard.",
+      "buttonTitle": "Keep Outboard running at login",
+      "emphasis": "Outboard can't stop you unplugging a drive or make that harmless.",
+      "id": "if-you-unplug",
+      "title": "If you unplug the drive"
+    }
+  ],
+  "driveSteps": [
+    "Open Disk Utility. Select the drive's APFS volume in the sidebar.",
+    "Click Add Volume in the toolbar. Name it Outboard.",
+    "For the format, choose an APFS option. Choose the encrypted option if you'll move iPhone backups. macOS will ask you for a password and offer to remember it in your keychain; Outboard never sees it.",
+    "Size options are optional: a quota stops Outboard from using all the drive's space; a reserve keeps room for it. Adding a volume doesn't erase the others; they share the drive's free space.",
+    "Come back here and choose Outboard."
+  ],
+  "driveStepsTitle": "We recommend a separate volume just for this.",
+  "footer": "This report lists what Outboard did and checked. It does not show that your data is undamaged or that a drive is reliable. Outboard has not been tried on every Mac or every drive.",
+  "guardOn": "Guard is on while Outboard is running. It watches your drives and keeps a notice in the menu bar.",
+  "guardQuit": "If you quit, nothing watches your drives. If a drive is unplugged, apps that use it will see a missing folder until Outboard runs again.",
+  "schema": 1
+}

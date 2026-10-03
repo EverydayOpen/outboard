@@ -1,0 +1,21 @@
+<!--meta {"title": "Download Outboard for Mac", "description": "Download Outboard for Mac, free: measure the big folders apps keep on your Mac and move the ones with a known method to your external drive. Requires macOS {{minMacOS}} or later. Unsigned beta builds come from GitHub Releases only."}-->
+<div class="band dusk"><div class="lamp" aria-hidden="true"><i class="lamp-glow"></i><i class="lamp-core"></i><i class="lamp-post"></i></div><div class="podium"><img class="icon" src="/icon.png" width="128" height="128" alt="Outboard app icon"></div></div>
+<article class="read prose center">
+  <p class="eyebrow"><b>04</b> · Download</p>
+  <h1>Download Outboard</h1>
+  <p class="lede">Free and open source. {{status}}</p>
+  <p class="actions"><a class="button" href="{{releasesURL}}"><svg aria-hidden="true"><use href="#i-down"/></svg><span class="sep"></span>Open GitHub Releases</a> <a class="button secondary" href="{{repoURL}}">View source</a></p>
+  <p class="facts">macOS {{minMacOS}} or later · Apple silicon and Intel · MIT licence</p>
+  <p class="tried">Not yet tried on a real Mac. Moves that change anything stay hidden in the app until you turn on "Show moves not yet tried on a real Mac". Start with data you can rebuild, and keep your own backup of anything else.</p>
+
+  <ol class="steps">
+    <li><b>Download from Releases</b><span>Take the latest build from GitHub Releases and check it against the <code>SHA256SUMS</code> (or <code>.sha256</code>) file attached to the same release, not the editable notes: run <code>shasum -a 256 -c</code> next to the download. Use no other site, and never paste a Terminal command to install it.</span></li>
+    <li><b>Move Outboard to Applications</b><span>Open the download and drag Outboard into the Applications folder.</span></li>
+    <li><b>Open it the first time</b><span>Public builds are unsigned betas until there is a Developer ID, so macOS blocks the first launch. On macOS 13 and 14, right-click Outboard, choose Open, then Open again. On macOS 15 or later, open it once, then go to System Settings › Privacy &amp; Security and choose Open Anyway.</span></li>
+  </ol>
+
+  <h2 id="source">Or build it yourself</h2>
+  <p>Everything is in the repository. You need a Mac with Xcode and <a href="https://github.com/yonaskolb/XcodeGen">XcodeGen</a>; the steps are in the <a href="{{repoURL}}#build-from-source">README</a>.</p>
+  <p class="fine">Outboard makes no network connections and is not affiliated with or endorsed by any app it lists. Read <a href="/how-a-move-works/">how a move works</a> first, including what it cannot do. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+  <p class="official"><svg aria-hidden="true"><use href="#i-check"/></svg><span>Only from github.com/{{releasesRepo}}/releases. Outboard is free: anyone asking you to pay for it is not us.</span></p>
+</article>

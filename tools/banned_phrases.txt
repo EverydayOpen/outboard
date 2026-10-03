@@ -1,0 +1,62 @@
+# Phrases Outboard never uses to describe itself (APP6 §4.10 I12, safety-ux §10.3). One extended regex per line, matched case-insensitively.
+# Single source of truth: tools/safety_greps.sh greps App/, Sources/, site/, .github/, README.md and CHANGELOG.md with it, and
+# OutboardCore's BannedPhrases.patterns must equal these lines (a Core test compares them).
+# A line that must mention one (this list, a "we never claim this" sentence) carries the marker  no-claim-ok  and says why.
+# "safety copy" passes (it does not match "safe"). Quoted vendor wording that contains "safe" belongs in docs/, which is not scanned.
+# The honest "Not yet tried on a real Mac." is worded with "tried": keep "tried" in copy and "tested on" out.
+\bsafe(ly|st)?\b
+\bsecure(ly)?\b
+\brisk-?free\b
+\b(zero|no|without) +risk\b
+\bguarantee
+\bnever +lose\b
+\bcan(no|')t +lose\b
+\bwon't +lose\b
+\bno +data +loss\b
+\bprevents? +data +loss\b
+\bprotects? +(your|against)\b
+\bbulletproof\b
+\bfoolproof\b
+\bfail-?safe\b
+\bcrash-?proof\b
+\bcorruption-?proof\b
+\btamper-?proof\b
+\bintact\b
+\buncorrupted\b
+\bcorruption-?free\b
+\bfaster\b
+\bspeed(s|ed)? +up\b
+\bspeed-?up\b
+\bboost
+\bturbo\b
+\bsnappier\b
+\bperformance +(boost|gain|improvement)
+\bas +fast +as +internal\b
+\b(works?|feels?|acts?) +like +(your +)?internal\b
+\bexternal +(ssd|drive|disk) +as +(an +)?internal\b
+\bexpands? +your +(mac|storage|ssd)
+\bautomatic(ally)? +(mov|relocat|configur|migrat|install)
+\bauto-?(move|configure|install)\b
+\bfully +reversible\b
+\b(always|100%) +(be +)?(undone|reversible)\b
+\bundo +(everything|anything)\b
+\bworks? +with +(any|every|all) +apps?\b
+\bverified +(safe|intact|backup)
+\bfully +verified\b
+\b(safe|automatic|verified) +backup
+\bendorsed +by\b
+\bapproved +by +(Apple|Adobe|Docker|Valve|Steam|Ollama)\b
+\bApple-approved\b
+\bin +one +click\b
+\bone-?click\b
+\binstant(ly)?\b
+\bin +seconds\b
+\bproven\b
+\btested +on +(a +|an +)?(real +)?(mac|macos)
+\bworks? +on +(a +)?real +mac
+\bmilitary\b
+\bcompliant\b
+\bGDPR\b
+\bHIPAA\b
+\bclean +your +Mac\b
+\bjunk\b

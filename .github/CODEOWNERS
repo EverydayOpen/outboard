@@ -1,0 +1,17 @@
+# The catalogue is data that decides which folder gets renamed and pointed at another drive, so every change to it, to the
+# rules that read it and to the log of what real Macs have tried is reviewed by the owner. A pull request that edits a recipe
+# is also checked by tools/check_recipes.py (ci.yml `checks`) and by the Core tests.
+# Everything else (the planner, eligibility rules, app, build files, CI tools) too; later, more specific lines win.
+*                                      @EverydayOpen
+/Sources/OutboardCore/Recipes/        @EverydayOpen
+/Sources/OutboardCore/Rules/          @EverydayOpen
+/Sources/OutboardCore/Model/          @EverydayOpen
+/Sources/OutboardMac/                 @EverydayOpen
+/Tests/OutboardCoreTests/Fixtures/export/ @EverydayOpen
+/docs/VERIFY_LOG.md                   @EverydayOpen
+/docs/BUILD_PLAN.md                   @EverydayOpen
+/tools/safety_greps.sh                @EverydayOpen
+/tools/banned_phrases.txt             @EverydayOpen
+/tools/check_recipes.py               @EverydayOpen
+/.github/                             @EverydayOpen
+/SECURITY.md                          @EverydayOpen

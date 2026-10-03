@@ -1,0 +1,74 @@
+# CodeQL for the Swift code (Core, Mac and App) and for these workflows. Needs a public repo (or GitHub Code Security).
+# Do not also turn on the repository's "default setup" for CodeQL (Settings > Advanced Security): the two conflict.
+#
+# VERIFY (never run yet): the Swift build below follows GitHub's "manual" build mode; if CodeQL reports that it
+# traced nothing, check the build runs from a clean state (no DerivedData cache) and that Xcode 26 is the one traced.
+name: codeql
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "41 5 * * 2"   # Tuesdays
+
+permissions:
+  contents: read
+
+env:
+  XCODEGEN: "2.46.0"   # checksum-pinned, same pin as ci.yml: bump all together
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+
+jobs:
+  swift:
+    runs-on: macos-26
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write   # upload the results
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app && xcodebuild -version
+
+      - uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: swift
+          build-mode: manual
+          queries: security-extended
+
+      - name: Build (what CodeQL traces)
+        shell: bash
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          test -d "$RUNNER_TEMP/xcodegen/share/xcodegen/SettingPresets"
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+          xcodebuild -project Outboard.xcodeproj -scheme Outboard -configuration Release \
+            -destination 'generic/platform=macOS' ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO clean build
+
+      - uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: /language:swift
+
+  actions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          languages: actions
+          build-mode: none
+      - uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          category: /language:actions

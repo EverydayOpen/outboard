@@ -1,0 +1,137 @@
+# The probe workflow (docs/BUILD_PLAN.md section 6.4): a set of experiments on GitHub's arm64 and Intel macOS runners, and the real-volume
+# tests, so the VERIFY items in section 12 are settled against real macOS output without owning a Mac. Day-1 workflow; weekly
+# afterwards, to notice when a new runner image changes behaviour. Failures are data: every probe keeps going and uploads what it saw.
+#
+# Using the result: download the probe-* artifacts from the run. Each command probe has <name>.stdout, <name>.stderr and <name>.exit.
+#   e1-summary.txt            E1: the effective build directory under each Xcode key and mode, and where a build and an archive land.
+#                             This decides whether the first automated move (B1) is Xcode build data or the Hugging Face cache.
+#   e2-*, e3-*, e4-*, ghost-state.txt   E2 Ollama, E3 Hugging Face, E4 npm / pip / cargo with their folder under a missing /Volumes name:
+#                             does a "ghost" folder appear on the boot volume?
+#   e5-*                      E5: diskutil info / list / apfs list of an APFS disk image, its whole disk and its physical store;
+#                             tmutil destinationinfo -X with no Time Machine set up. The outputs become Core parser fixtures
+#                             (Tests/OutboardCoreTests/Fixtures/commands/).
+#   t1-uuid.txt, t1-volume-facts.stdout   T1: does the UUID URLResourceValues gives equal diskutil's VolumeUUID, byte for byte?
+#   t5.stdout                 T5: the errno of read, write, fstat and stat on an open file after `detach -force`.
+#   t6-summary.txt, t6-compare.txt, t6-copy.stdout   E6 and T6: what FileManager.copyItem keeps (links, xattrs, ACLs, resource forks,
+#                             compression, modes, sparse blocks) on a Hugging Face-shaped tree and a fidelity tree.
+#   events.stdout             which NSWorkspace notifications reach a process in this session.
+#   tcc-log.txt               whether the first write to the image trips the Removable Volumes check.
+#   trash-on-volume.stdout    what FileManager.trashItem does on the image volume.
+#   volumes-writable.*        may this user's process create a folder directly under /Volumes (VERIFY item 12)?
+#   swift-test.log            the whole test suite, including the real-volume tests, on both architectures.
+# Real laptops come from testers: the runners are fresh virtual machines with no Time Machine, no iCloud, no FileVault, no external
+# hardware and no logged-in user at a keyboard, so they cannot answer the questions in BUILD_PLAN section 6.4 under "What CI cannot show".
+#
+# Everything here only reads, except the probes that write into folders they created themselves (a temporary folder, the disk
+# images, the Xcode keys they set and remove again, and a folder name under /Volumes that they remove) on a throwaway runner.
+name: fixtures
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 4 * * 1"   # Mondays: a fresh dump to compare by hand
+
+permissions:
+  contents: read
+
+env:
+  XCODEGEN: "2.46.0"   # checksum-pinned, same pin as ci.yml, beta.yml, release.yml, screens.yml and codeql.yml: bump all together
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-26, macos-15-intel]   # arm64, and the last Intel image (supported until Aug 2027)
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode 26 where the image has it
+        run: |
+          if [ -d /Applications/Xcode_26.6.app ]; then sudo xcode-select -s /Applications/Xcode_26.6.app; fi
+          xcodebuild -version
+
+      - name: Command probes (stdout, stderr and exit status of each)
+        continue-on-error: true
+        run: |
+          mkdir -p out
+          . tools/probes/lib.sh
+          { sw_vers; uname -m; echo "runner image: $ImageOS $ImageVersion"; xcodebuild -version; swift --version 2>&1; } > out/about.txt
+          rec diskutil-list /usr/sbin/diskutil list -plist
+          rec diskutil-info-root /usr/sbin/diskutil info -plist /
+          rec diskutil-apfs-list /usr/sbin/diskutil apfs list -plist
+          rec tmutil-destinationinfo /usr/bin/tmutil destinationinfo -X
+          rec tmutil-version /usr/bin/tmutil version
+          rec defaults-xcode-domain defaults read com.apple.dt.Xcode
+          rec mount mount
+          rec df df -h
+          rec volumes-listing ls -le@ /Volumes
+          rec id id
+          rec pmset-assertions pmset -g assertions
+          rec system-profiler-storage bounded 120 system_profiler SPStorageDataType SPNVMeDataType SPUSBDataType
+          rec swift-version swift --version
+
+      - name: Fetch XcodeGen for the archive probe (checksum-pinned)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          test -d "$RUNNER_TEMP/xcodegen/share/xcodegen/SettingPresets"
+
+      - name: E1 Xcode keys (defaults, showBuildSettings, a build, an archive)
+        continue-on-error: true
+        run: bash tools/probes/xcode_keys.sh out "$RUNNER_TEMP/xcodegen/bin/xcodegen"
+
+      - name: Disk-image probes (E5, E6, T1, T5, T6, notifications, TCC, Trash, /Volumes)
+        continue-on-error: true
+        run: bash tools/probes/volumes.sh out
+
+      # Whatever happened above, no test image stays attached for the next step or the next job on this runner.
+      - name: Detach any test image still mounted
+        if: always()
+        run: bash tools/disk_image.sh cleanup
+
+      - name: E2, E3, E4 (Ollama, Hugging Face, npm / pip / cargo with a missing drive)
+        continue-on-error: true
+        run: bash tools/probes/ghost_mount.sh out
+
+      # Not continue-on-error: a red real-volume test (unplug, crash recovery) must turn the run red. The probe steps above stay data.
+      - name: swift test (real-volume tests on)
+        env:
+          OUTBOARD_DISK_TESTS: "1"   # without it every real-volume test skips itself
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee out/swift-test.log
+
+      - name: Fail if the real-volume tests were skipped
+        run: bash tools/check_test_log.sh out/swift-test.log
+
+      - name: Detach any test image still mounted
+        if: always()
+        run: bash tools/disk_image.sh cleanup
+
+      - name: Summary
+        if: always()
+        run: |
+          cat out/about.txt || true
+          cat out/e1-summary.txt || true
+          cat out/t1-uuid.txt || true
+          cat out/t6-summary.txt || true
+          cat out/ghost-state.txt || true
+          for n in e5-diskutil-info-volume e5-tmutil-destinationinfo tmutil-destinationinfo t5 volumes-writable; do echo "== $n: exit $(cat out/$n.exit 2>/dev/null)"; head -5 "out/$n.stdout" 2>/dev/null; head -3 "out/$n.stderr" 2>/dev/null; done
+          grep -E "skipped|XCTSkip" out/swift-test.log || true
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: probe-${{ matrix.runner }}
+          path: out/
+          if-no-files-found: error

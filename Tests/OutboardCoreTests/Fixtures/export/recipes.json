@@ -1,0 +1,1182 @@
+{
+  "recipes": [
+    {
+      "beta": "B1",
+      "bundleIDs": [
+        "com.apple.dt.Xcode",
+        "com.apple.iphonesimulator",
+        "com.apple.dt.Instruments"
+      ],
+      "companionSources": [],
+      "confidence": "medium",
+      "consent": {
+        "checkboxes": [
+          {
+            "id": "quit-xcode",
+            "text": "I have quit Xcode, Simulator and Instruments."
+          },
+          {
+            "id": "default-folder",
+            "text": "I understand that while Outboard is running, builds use the default folder when my Outboard drive is not connected."
+          }
+        ],
+        "what": "Xcode's build data",
+        "whatChanges": "The DerivedData folder (build products and indexes) is copied to your Outboard drive and checked file by file. Then the same setting you'd change in Xcode, Settings, Locations, is pointed at the copy.",
+        "whatToKnow": [
+          "Xcode can rebuild this folder, so losing it costs build time, not your work.",
+          "While Outboard is running, it puts the setting back if your Outboard drive is unplugged, so Xcode uses its normal folder on your Mac and builds start from scratch there. It points the setting at the drive again when the drive returns and Xcode is closed. If Xcode is open when the drive is unplugged, the setting is not changed until you quit Xcode, so until then Xcode still points at the missing drive.",
+          "Your original stays as DerivedData.before-move until you confirm. You can roll back until then.",
+          "Some developers report that tests for macOS frameworks, and Swift package plugins, fail when DerivedData is on an external drive (Apple Developer Forums, Swift Package Manager issue 6948). If that happens, roll back."
+        ]
+      },
+      "defaults": {
+        "domain": "com.apple.dt.Xcode",
+        "keys": [
+          {
+            "name": "IDECustomDerivedDataLocation",
+            "neutral": null,
+            "type": "string",
+            "value": {
+              "kind": "destinationPath",
+              "value": null
+            },
+            "valueVerified": true
+          },
+          {
+            "name": "IDEDerivedDataPathMode",
+            "neutral": {
+              "kind": "int",
+              "value": 0
+            },
+            "type": "int",
+            "value": {
+              "kind": "int",
+              "value": 2
+            },
+            "valueVerified": false
+          }
+        ],
+        "restore": "writePrior"
+      },
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": true
+      },
+      "envLine": null,
+      "id": "xcode-deriveddata",
+      "kind": "defaults",
+      "mayRelaunch": false,
+      "methodLabel": "Official setting",
+      "minMacOS": null,
+      "missingDriveEffect": "While Outboard is running, Xcode goes back to its normal build folder on your Mac until the drive returns.",
+      "name": "Xcode build data",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "revertSetting",
+      "processNames": [
+        "xcodebuild",
+        "Xcode",
+        "Simulator",
+        "Instruments"
+      ],
+      "riskClass": "regenerable",
+      "riskLabel": "Rebuilds itself",
+      "sensitive": false,
+      "source": "~/Library/Developer/Xcode/DerivedData",
+      "sources": [
+        "https://github.com/fastlane/fastlane/pull/12232",
+        "https://pewpewthespells.com/blog/xcode_build_locations.html",
+        "https://developer.apple.com/forums/thread/812321",
+        "https://github.com/apple/swift-package-manager/issues/6948"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "CI experiment E1: the IDEDerivedDataPathMode value for an absolute path, and that mode 0 means the default location",
+        "Whether defaults write is honoured by Xcode while it is closed, and by xcodebuild",
+        "Whether the two documented external-drive breakages still occur on Xcode 26 and 27",
+        "What Xcode does with the setting when the folder is missing at launch"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B2",
+      "bundleIDs": [],
+      "companionSources": [
+        "~/.cache/huggingface/xet"
+      ],
+      "confidence": "high",
+      "consent": {
+        "checkboxes": [
+          {
+            "id": "no-python",
+            "text": "No Python session, notebook or app is using Hugging Face models right now."
+          },
+          {
+            "id": "models-away",
+            "text": "I understand these tools won't find their models when my Outboard drive is not connected."
+          }
+        ],
+        "what": "your Hugging Face models",
+        "whatChanges": "The Hugging Face hub cache (and the xet cache beside it, when there is one) is copied to your Outboard drive and checked file by file. Then a link is put where each folder was. The folder above them, which holds your access token, stays on your Mac.",
+        "whatToKnow": [
+          "While Outboard is running, it puts a note where the folder was if your Outboard drive is unplugged. That is meant to make tools that use this cache stop with an error; without the note they find a missing folder, or start downloading again to your Mac.",
+          "Your original stays as hub.before-move until you confirm.",
+          "This is a community method, not a Hugging Face setting."
+        ]
+      },
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": true
+      },
+      "envLine": "export HF_HUB_CACHE={drive}/hub",
+      "id": "huggingface-hub-cache",
+      "kind": "symlink",
+      "mayRelaunch": false,
+      "methodLabel": "Community method",
+      "minMacOS": null,
+      "missingDriveEffect": "Tools that use the Hugging Face cache stop with an error, or download again to your Mac, until the drive returns.",
+      "name": "Hugging Face models",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "parkPlaceholder",
+      "processNames": [
+        "huggingface-cli",
+        "hf"
+      ],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": "~/.cache/huggingface/hub",
+      "sources": [
+        "https://huggingface.co/docs/huggingface_hub/guides/manage-cache",
+        "https://huggingface.co/docs/huggingface_hub/package_reference/environment_variables"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "What each Hugging Face tool does when the cache folder is a note file instead of a folder",
+        "That the copy keeps the cache's relative links and the verifier compares their targets",
+        "Whether a missing HF_HUB_CACHE parent under /Volumes creates a folder on the boot volume (CI experiment E3)"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B2",
+      "bundleIDs": [
+        "com.electron.ollama"
+      ],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": {
+        "checkboxes": [
+          {
+            "id": "quit-ollama",
+            "text": "I have quit Ollama, including its menu bar icon, and no ollama command is running."
+          },
+          {
+            "id": "models-away",
+            "text": "I understand Ollama won't find its models when my Outboard drive is not connected."
+          }
+        ],
+        "what": "your Ollama models",
+        "whatChanges": "The models folder inside .ollama is copied to your Outboard drive and checked file by file. Then a link is put where it was. The rest of .ollama (keys, history) stays on your Mac.",
+        "whatToKnow": [
+          "While your Outboard drive is unplugged, Ollama will not see your models, and it may look as if they were deleted. They are on the drive. While Outboard is running, it puts a note where the folder was, which is meant to make Ollama report an error instead of starting an empty models folder.",
+          "Your original stays as models.before-move until you confirm.",
+          "This is a community method. Ollama's own Settings has a Model location field; Outboard does not change it."
+        ]
+      },
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": true
+      },
+      "envLine": "export OLLAMA_MODELS={drive}/models",
+      "id": "ollama-models",
+      "kind": "symlink",
+      "mayRelaunch": true,
+      "methodLabel": "Community method",
+      "minMacOS": null,
+      "missingDriveEffect": "Ollama won't find its models, and new downloads may land on your Mac, until the drive returns.",
+      "name": "Ollama models",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "parkPlaceholder",
+      "processNames": [
+        "ollama",
+        "Ollama"
+      ],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": "~/.ollama/models",
+      "sources": [
+        "https://docs.ollama.com/faq",
+        "https://github.com/ollama/ollama"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "That a note file at ~/.ollama/models makes the Ollama app and CLI report an error instead of recreating a folder",
+        "Whether a link to a parked or missing target survives the app's startup check",
+        "Ollama's launch-at-login behaviour (whether it restarts after being quit)"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B2",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": {
+        "checkboxes": [
+          {
+            "id": "no-llamacpp",
+            "text": "No llama.cpp program is running."
+          },
+          {
+            "id": "models-away",
+            "text": "I understand llama.cpp won't find these models when my Outboard drive is not connected."
+          }
+        ],
+        "what": "your llama.cpp models",
+        "whatChanges": "The llama.cpp download cache is copied to your Outboard drive and checked file by file. Then a link is put where it was.",
+        "whatToKnow": [
+          "While your Outboard drive is unplugged, llama.cpp will not find models it downloaded before. While Outboard is running, it puts a note where the folder was, which is meant to make it stop with an error.",
+          "Your original stays as llama.cpp.before-move until you confirm.",
+          "This is a community method, not a llama.cpp setting."
+        ]
+      },
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": true
+      },
+      "envLine": "export LLAMA_CACHE={drive}/llama.cpp",
+      "id": "llamacpp-cache",
+      "kind": "symlink",
+      "mayRelaunch": false,
+      "methodLabel": "Community method",
+      "minMacOS": null,
+      "missingDriveEffect": "llama.cpp can't find the models it downloaded before, and may download them again to your Mac.",
+      "name": "llama.cpp models",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "parkPlaceholder",
+      "processNames": [
+        "llama-cli",
+        "llama-server",
+        "llama-run",
+        "llama-bench"
+      ],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": "~/Library/Caches/llama.cpp",
+      "sources": [
+        "https://github.com/ggml-org/llama.cpp"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "That the cache layout is preserved by the copy (links inside the Hugging Face integration)",
+        "What llama.cpp does when its cache folder is a note file"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B2",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": {
+        "checkboxes": [
+          {
+            "id": "no-npm",
+            "text": "No npm command is running."
+          },
+          {
+            "id": "cache-away",
+            "text": "I understand npm has no cache when my Outboard drive is not connected."
+          }
+        ],
+        "what": "your npm cache",
+        "whatChanges": "The .npm folder is copied to your Outboard drive and checked file by file. Then a link is put where it was.",
+        "whatToKnow": [
+          "npm calls this folder strictly a cache: it fetches packages again when something is missing, so losing it costs time, not your work.",
+          "While your Outboard drive is unplugged, npm will report an error or fetch packages again. While Outboard is running, it puts a note where the folder was.",
+          "Your original stays as .npm.before-move until you confirm.",
+          "Outboard can't tell an npm command from another node program by name. It looks for programs that have files open in the cache, and relies on the box below for the rest."
+        ]
+      },
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": true
+      },
+      "envLine": "export npm_config_cache={drive}/npm",
+      "id": "npm-cache",
+      "kind": "symlink",
+      "mayRelaunch": false,
+      "methodLabel": "Community method",
+      "minMacOS": null,
+      "missingDriveEffect": "npm can't use its cache and fetches packages again, or reports an error, until the drive returns.",
+      "name": "npm cache",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "parkPlaceholder",
+      "processNames": [],
+      "riskClass": "regenerable",
+      "riskLabel": "Rebuilds itself",
+      "sensitive": false,
+      "source": "~/.npm",
+      "sources": [
+        "https://docs.npmjs.com/cli/v10/commands/npm-cache",
+        "https://docs.npmjs.com/cli/v10/using-npm/config#cache"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "What npm does when ~/.npm is a note file instead of a folder (CI experiment E4)",
+        "The process name npm and npx show while they run (believed to be node), and whether an open-files check sees a running install"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B3",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "medium",
+      "consent": {
+        "checkboxes": [
+          {
+            "id": "device-disconnected",
+            "text": "My iPhone or iPad is disconnected, and Finder and Apple Devices are not syncing it."
+          },
+          {
+            "id": "backups-on-drive-only",
+            "text": "I understand these backups will be on my Outboard drive only."
+          },
+          {
+            "id": "community-method",
+            "text": "I understand this is a community method, not an Apple setting."
+          }
+        ],
+        "what": "your iPhone and iPad backups",
+        "whatChanges": "The folder where Finder and Apple Devices keep device backups is copied to your Outboard drive and checked file by file. Then a link is put where the folder was. This is a widely used method, not an Apple setting.",
+        "whatToKnow": [
+          "If your Outboard drive is unplugged, Finder and Apple Devices will not find your backups and may not be able to back up a device. While Outboard is running, it puts a note where the folder was, which is meant to make them stop with an error instead of starting a new set.",
+          "Time Machine may not back up your Outboard drive. After this move your device backups are not in your Time Machine backup unless you check that the drive is included in Time Machine settings.",
+          "Your original stays as Backup.before-move until you confirm. We suggest connecting a device and making a backup to the new location first.",
+          "Outboard can't tell by itself whether Finder or Apple Devices is syncing a device. It relies on the first box below, so tick it only when that is true.",
+          "macOS protects this folder. Outboard needs Full Disk Access to move it, and will ask you to allow that in System Settings. It changes nothing until you do."
+        ]
+      },
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": true
+      },
+      "envLine": null,
+      "id": "ios-device-backups",
+      "kind": "symlink",
+      "mayRelaunch": false,
+      "methodLabel": "Community method",
+      "minMacOS": null,
+      "missingDriveEffect": "Finder and Apple Devices can't find your backups, and may not be able to back up a device, until the drive returns.",
+      "name": "iPhone backups",
+      "needsFDA": true,
+      "neverReason": null,
+      "onDriveMissing": "parkPlaceholder",
+      "processNames": [],
+      "riskClass": "irreplaceable",
+      "riskLabel": "Can't be replaced",
+      "sensitive": true,
+      "source": "~/Library/Application Support/MobileSync/Backup",
+      "sources": [
+        "https://discussions.apple.com/thread/256152634",
+        "https://www.imore.com/how-move-your-iphone-or-ipad-backups-external-hard-drive",
+        "https://setapp.com/how-to/backup-iphone-to-external-drive"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "Whether linking under MobileSync needs Full Disk Access on macOS 15 and 26, and the exact error without it",
+        "What Finder and Apple Devices do when the Backup folder is a note file (fail, crash or recreate)",
+        "Whether sizing this folder needs Full Disk Access",
+        "The process names Finder and Apple Devices use while a device backs up, so the running check can match them by name",
+        "Time Machine's default for external volumes (the Time Machine sentence in the consent text)"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B4",
+      "bundleIDs": [
+        "com.apple.dt.Xcode"
+      ],
+      "companionSources": [],
+      "confidence": "medium",
+      "consent": {
+        "checkboxes": [
+          {
+            "id": "quit-xcode",
+            "text": "I have quit Xcode."
+          },
+          {
+            "id": "archives-on-drive-only",
+            "text": "I understand these archives will be on my Outboard drive only, and Time Machine may not include them."
+          }
+        ],
+        "what": "your Xcode archives",
+        "whatChanges": "Your archives (the builds you have shipped, with their debug symbols) are copied to your Outboard drive and checked file by file. Then Xcode's archive location is pointed at the copy.",
+        "whatToKnow": [
+          "If your Outboard drive is unplugged, Xcode's Organizer will not list these archives. Outboard leaves the setting alone, and while it is running it tells you the drive is away.",
+          "Time Machine may not back up your Outboard drive. After this move your archives are not in your Time Machine backup unless you check that the drive is included in Time Machine settings.",
+          "Your original stays as Archives.before-move until you confirm. We suggest keeping it for a while."
+        ]
+      },
+      "defaults": {
+        "domain": "com.apple.dt.Xcode",
+        "keys": [
+          {
+            "name": "IDECustomDistributionArchivesLocation",
+            "neutral": {
+              "kind": "string",
+              "value": "~/Library/Developer/Xcode/Archives"
+            },
+            "type": "string",
+            "value": {
+              "kind": "destinationPath",
+              "value": null
+            },
+            "valueVerified": false
+          }
+        ],
+        "restore": "writePrior"
+      },
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": true
+      },
+      "envLine": null,
+      "id": "xcode-archives",
+      "kind": "defaults",
+      "mayRelaunch": false,
+      "methodLabel": "Official setting",
+      "minMacOS": null,
+      "missingDriveEffect": "Xcode's Organizer can't list these archives until the drive returns.",
+      "name": "Xcode archives",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "leaveAlone",
+      "processNames": [
+        "xcodebuild",
+        "Xcode"
+      ],
+      "riskClass": "irreplaceable",
+      "riskLabel": "Can't be replaced",
+      "sensitive": false,
+      "source": "~/Library/Developer/Xcode/Archives",
+      "sources": [
+        "https://github.com/fastlane/fastlane/pull/8898",
+        "https://developer.apple.com/forums/thread/733640"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "Whether IDECustomDistributionArchivesLocation is what Xcode's Locations pane writes for Archives, and its mode key",
+        "Organizer behaviour with the volume absent",
+        "Time Machine's default for external volumes (the Time Machine sentence in the consent text)"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [
+        "com.apple.AppStore"
+      ],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "mas-large-apps",
+      "kind": "guided",
+      "mayRelaunch": false,
+      "methodLabel": "Guided",
+      "minMacOS": "15.1",
+      "missingDriveEffect": "macOS prompts you to download the app again.",
+      "name": "App Store apps over 1 GB",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "regenerable",
+      "riskLabel": "Rebuilds itself",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://support.apple.com/guide/app-store/download-install-large-apps-a-separate-disk-fir06754f864/mac"
+      ],
+      "steps": [
+        "Open the App Store and choose App Store, then Settings.",
+        "Turn on Download and install large apps to a separate disk.",
+        "Choose your Outboard drive. It must be an APFS drive."
+      ],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "Which data stays on the Mac for such apps",
+        "Behaviour on macOS 27"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [
+        "com.apple.Photos"
+      ],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "photos-library",
+      "kind": "guided",
+      "mayRelaunch": false,
+      "methodLabel": "Guided",
+      "minMacOS": null,
+      "missingDriveEffect": "Photos stops using the library and starts a new empty one in the default place.",
+      "name": "Photos library",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "irreplaceable",
+      "riskLabel": "Can't be replaced",
+      "sensitive": false,
+      "source": "~/Pictures/Photos Library.photoslibrary",
+      "sources": [
+        "https://support.apple.com/en-us/108345"
+      ],
+      "steps": [
+        "Quit Photos.",
+        "In Finder, drag Photos Library to a folder on your Outboard drive.",
+        "Hold the Option key and open Photos, then choose the library on the drive.",
+        "In Photos, choose Settings, then General, then Use as System Photo Library."
+      ],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "macOS 26 and 27: whether Photos asks or silently starts a new library when the drive is missing",
+        "Reports that a drive holding the System Photo Library fails to eject"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [
+        "com.apple.Music"
+      ],
+      "companionSources": [],
+      "confidence": "medium",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "music-media-folder",
+      "kind": "guided",
+      "mayRelaunch": false,
+      "methodLabel": "Guided",
+      "minMacOS": null,
+      "missingDriveEffect": "Tracks stored on the drive may show as missing until it returns.",
+      "name": "Music media folder",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": "~/Music/Music/Media",
+      "sources": [
+        "https://support.apple.com/guide/music/change-where-music-files-are-stored-mus69248042d/mac"
+      ],
+      "steps": [
+        "Quit other apps that use your music files, then open Music.",
+        "Choose Music, then Settings, then the Files tab.",
+        "Under Music Media folder location, click Change and choose a folder on your Outboard drive.",
+        "To copy the music you already have, choose File, then Library, then Organize Library, then Consolidate files."
+      ],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "Whether Consolidate files copies into the new media folder",
+        "What Music shows for tracks on a missing drive"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [
+        "com.apple.FinalCut"
+      ],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "final-cut-library",
+      "kind": "guided",
+      "mayRelaunch": false,
+      "methodLabel": "Guided",
+      "minMacOS": null,
+      "missingDriveEffect": "The library is missing from the sidebar until the drive returns.",
+      "name": "Final Cut Pro libraries",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "irreplaceable",
+      "riskLabel": "Can't be replaced",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://support.apple.com/en-us/119610",
+        "https://support.apple.com/en-us/102116",
+        "https://support.apple.com/guide/final-cut-pro/set-storage-locations-ver7db6ffe77/mac"
+      ],
+      "steps": [
+        "Quit Final Cut Pro.",
+        "In Finder, drag the library (a .fcpbundle file) to a folder on your Outboard drive.",
+        "Open Final Cut Pro and open the library from its new place.",
+        "To move a library's media, cache or backups separately, use the storage locations in the library inspector."
+      ],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "What Final Cut Pro shows for an offline library and for offline media"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [
+        "com.apple.logic10",
+        "com.apple.mainstage3"
+      ],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "logic-sound-library",
+      "kind": "guided",
+      "mayRelaunch": false,
+      "methodLabel": "Guided",
+      "minMacOS": null,
+      "missingDriveEffect": "Logic Pro asks you to Retry, Ignore (basic tones) or Reset (reinstall the library on your Mac).",
+      "name": "Logic Pro Sound Library",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": "~/Music/Logic Pro Library.bundle",
+      "sources": [
+        "https://support.apple.com/en-us/111094"
+      ],
+      "steps": [
+        "Quit Logic Pro and MainStage.",
+        "In Finder, open your Music folder and drag Logic Pro Library.bundle to your Outboard drive.",
+        "Open Logic Pro. If it asks where the library is, choose the one on the drive.",
+        "In older versions, choose Logic Pro, then Sound Library, then Relocate Sound Library instead."
+      ],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "The bundle identifiers of Logic Pro and MainStage",
+        "The library location and file name in the current Logic Pro release"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [
+        "com.valvesoftware.steam"
+      ],
+      "companionSources": [],
+      "confidence": "medium",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "steam-library",
+      "kind": "guided",
+      "mayRelaunch": false,
+      "methodLabel": "Guided",
+      "minMacOS": null,
+      "missingDriveEffect": "Games show as not installed until Steam sees the folder again.",
+      "name": "Steam games",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": "~/Library/Application Support/Steam/steamapps",
+      "sources": [
+        "https://steamcommunity.com/discussions/forum/2/595137109171382721/"
+      ],
+      "steps": [
+        "Quit any game, then open Steam.",
+        "Choose Steam, then Settings, then Storage.",
+        "Add your Outboard drive as a storage location. It must be an APFS drive.",
+        "Choose Make Default to send new installs there, and move installed games with Steam itself."
+      ],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "Steam's own support text (the page could not be read when this card was written)",
+        "Which file systems Steam accepts for a library on a Mac"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [
+        "ai.elementlabs.lmstudio"
+      ],
+      "companionSources": [],
+      "confidence": "medium",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "lmstudio-models",
+      "kind": "guided",
+      "mayRelaunch": false,
+      "methodLabel": "Guided",
+      "minMacOS": null,
+      "missingDriveEffect": "The models on the drive don't appear in LM Studio until it returns.",
+      "name": "LM Studio models",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": "~/.lmstudio/models",
+      "sources": [
+        "https://lmstudio.ai/docs/app/basics/download-model",
+        "https://github.com/lmstudio-ai/docs/issues/184"
+      ],
+      "steps": [
+        "Quit LM Studio.",
+        "In Finder, copy the models folder to your Outboard drive. Keep the publisher, model and file layout.",
+        "Open LM Studio, go to My Models, and change the models directory to the copy.",
+        "When the models show up, you can remove the old folder yourself."
+      ],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "The default models path and the layout in the current release",
+        "Where the models directory setting is stored and its label in the current release"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [
+        "com.google.android.studio"
+      ],
+      "companionSources": [],
+      "confidence": "medium",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": false,
+        "requiresSolidState": false
+      },
+      "envLine": "export ANDROID_HOME={drive}/sdk",
+      "id": "android-sdk",
+      "kind": "guided",
+      "mayRelaunch": false,
+      "methodLabel": "Guided",
+      "minMacOS": null,
+      "missingDriveEffect": "Android Studio and Gradle can't find the SDK until the drive returns.",
+      "name": "Android SDK",
+      "needsFDA": false,
+      "neverReason": null,
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": "~/Library/Android/sdk",
+      "sources": [
+        "https://developer.android.com/tools/variables"
+      ],
+      "steps": [
+        "Quit Android Studio.",
+        "On your Outboard drive, make a folder named android-sdk inside the Outboard folder, then copy the sdk folder into it.",
+        "Open Android Studio, then SDK Manager, and set Android SDK Location to the copy.",
+        "For command-line tools, set ANDROID_HOME to the same folder. Outboard shows the line to copy; it doesn't edit your shell files.",
+        "Emulators keep their devices in ANDROID_AVD_HOME. Set that separately if you want them on the drive."
+      ],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "The SDK Location setting path in the current Android Studio release",
+        "How the variable reaches Android Studio when it is started from the Dock"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-containers",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "Sandboxed app data",
+      "needsFDA": false,
+      "neverReason": "macOS stops sandboxed apps from starting when their data folder is replaced by a link, as Docker for Mac issue 771 reports.",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "irreplaceable",
+      "riskLabel": "Can't be replaced",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://github.com/docker/for-mac/issues/771"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "Whether a link below a container's Data folder is tolerated"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-apple-data",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "Mail, Safari, Messages and Notes",
+      "needsFDA": false,
+      "neverReason": "Apple apps expect these on your Mac, and macOS protects them. Outboard doesn't touch them.",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "irreplaceable",
+      "riskLabel": "Can't be replaced",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://imlzq.com/apple/macos/2024/08/24/Unveiling-Mac-Security-A-Comprehensive-Exploration-of-TCC-Sandboxing-and-App-Data-TCC.html"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-homebrew",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "Homebrew",
+      "needsFDA": false,
+      "neverReason": "Homebrew's prebuilt packages only work in its default location on your Mac's own disk (Homebrew docs).",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://docs.brew.sh/Support-Tiers"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-caches-home",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "The Caches folder and your home folder",
+      "needsFDA": false,
+      "neverReason": "Hundreds of apps write to the Caches folder the moment they start, so moving all of it makes apps misbehave when the drive is away. Individual app caches are offered where Outboard knows how. Your home folder isn't offered either: Apple supports moving it, and with FileVault it can stop you logging in.",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "irreplaceable",
+      "riskLabel": "Can't be replaced",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://appleinsider.com/inside/macos-ventura/tips/how-to-move-your-home-directory-in-macos-ventura",
+        "https://osxdaily.com/2010/02/16/move-your-home-directory-to-another-location/"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-icloud",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "Anything in iCloud Drive",
+      "needsFDA": false,
+      "neverReason": "These files are managed by iCloud. Moving them can interfere with syncing.",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "irreplaceable",
+      "riskLabel": "Can't be replaced",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://github.com/EverydayOpen/whydunit"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [
+        "Add an Apple support page that describes how iCloud Drive manages its folders"
+      ],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-app-bundles",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "Apps themselves",
+      "needsFDA": false,
+      "neverReason": "Moving an app can break its updates and permissions. Outboard moves data, not apps.",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://github.com/bevry-vibes/mac-move-apps"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "medium",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-simulator-runtimes",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "Xcode simulator runtimes",
+      "needsFDA": false,
+      "neverReason": "Xcode manages simulator runtimes as disk images. Moving them can leave simulators unable to load. To free space, remove the runtimes you don't need in Xcode, Settings, Components.",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://developer.apple.com/tutorials/data/documentation/xcode/downloading-and-installing-additional-xcode-components.md"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-docker-orbstack",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "Docker Desktop and OrbStack",
+      "needsFDA": false,
+      "neverReason": "Docker Desktop and OrbStack have their own storage setting, and Docker's has been unreliable on external drives for years. Outboard doesn't move their data.",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "expensive",
+      "riskLabel": "Large to download again",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://docs.docker.com/desktop/settings-and-maintenance/settings/",
+        "https://github.com/docker/for-mac/issues/6797"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [],
+      "version": 1
+    },
+    {
+      "beta": "B0",
+      "bundleIDs": [],
+      "companionSources": [],
+      "confidence": "high",
+      "consent": null,
+      "defaults": null,
+      "drive": {
+        "allowsHFS": true,
+        "requiresSolidState": false
+      },
+      "envLine": null,
+      "id": "never-pnpm-uv",
+      "kind": "never",
+      "mayRelaunch": false,
+      "methodLabel": "Not offered",
+      "minMacOS": null,
+      "missingDriveEffect": "",
+      "name": "pnpm and uv stores",
+      "needsFDA": false,
+      "neverReason": "These stores work by linking files from your projects. On another drive the files are copied instead, so space on your Mac can go up, not down.",
+      "onDriveMissing": "none",
+      "processNames": [],
+      "riskClass": "regenerable",
+      "riskLabel": "Rebuilds itself",
+      "sensitive": false,
+      "source": null,
+      "sources": [
+        "https://pnpm.io/settings/node-modules",
+        "https://docs.astral.sh/uv/concepts/cache/"
+      ],
+      "steps": [],
+      "verifiedOnRealMac": false,
+      "verify": [],
+      "version": 1
+    }
+  ],
+  "schema": 1
+}

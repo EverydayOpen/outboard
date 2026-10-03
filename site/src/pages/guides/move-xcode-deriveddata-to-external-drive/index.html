@@ -1,0 +1,60 @@
+<!--meta {"title": "How to move Xcode DerivedData to an external drive", "description": "Xcode has its own setting for where DerivedData lives. How to use it, the two documented problems with external drives, why Xcode Archives are different, and what Outboard does. Sources included."}-->
+<article class="read prose guide">
+  <p class="eyebrow"><b>G1</b> · Guide · Checked 3 October 2026 · macOS</p>
+  <h1>How to move Xcode DerivedData to an external drive</h1>
+
+  <div class="summary">
+    <h2>The short answer</h2>
+    <ol>
+      <li>Xcode has a setting for it: Settings › Locations › Derived Data › Custom. The same choice is stored in the <code>com.apple.dt.Xcode</code> defaults domain.</li>
+      <li>DerivedData rebuilds itself, so losing it costs build time, not your work.</li>
+      <li>Two problems are documented on external drives, so try it, and keep what you have until you are sure it works.</li>
+    </ol>
+  </div>
+
+  <h2 id="what">What DerivedData is</h2>
+  <p>Build products and indexes that Xcode writes under <code>~/Library/Developer/Xcode/DerivedData</code>. Community guides and forum posts put it anywhere from 5 to 100 GB; those are reports, not an Apple figure, so measure your own. It is regenerable: Xcode builds it again when it is missing, which is why it is the lowest-stakes of the Xcode moves.</p>
+
+  <h2 id="official">The official way</h2>
+  <p>In Xcode, open Settings › Locations. Next to Derived Data choose Custom and pick a folder on the drive. The path is stored under the key <code>IDECustomDerivedDataLocation</code> in the <code>com.apple.dt.Xcode</code> defaults domain, which is where tools such as fastlane read it.</p>
+  <p>A second key, <code>IDEDerivedDataPathMode</code>, decides how that path is read. We could not find a source that says which value means "an absolute custom path", so this guide does not print one. If you script the change, set the folder once in the Locations pane and read what Xcode wrote with <code>defaults read com.apple.dt.Xcode</code>. For a single build there is also <code>xcodebuild -derivedDataPath</code> with a folder.</p>
+
+  <h2 id="quit">Quit first</h2>
+  <p>Quit Xcode, Simulator and Instruments, and stop any <code>xcodebuild</code> that is running, before you change the setting or move the folder.</p>
+
+  <h2 id="breakages">Known breakages</h2>
+  <ul>
+    <li>Framework tests on "My Mac" fail with exit code 9 when DerivedData is on an external drive, and Xcode gives no warning (Apple Developer Forums, thread 812321).</li>
+    <li>Swift package build plugins fail with "Operation not permitted" when DerivedData is a custom external path (swift-package-manager issue 6948, reported on Xcode 15 with Swift 5.9, still open when we checked).</li>
+  </ul>
+  <p>In both reports, running <code>xcodebuild</code> from Terminal, or using the default location, avoids the failure. We have not checked either one on Xcode 26 or 27, so treat them as things that may still happen.</p>
+
+  <h2 id="outboard">What Outboard does</h2>
+  <p>Outboard copies the DerivedData folder to your drive, compares every file with the original by size and SHA-256, writes the same setting Xcode's Locations pane writes, and keeps your original as <code>DerivedData.before-move</code> until you confirm. If the drive is away and Xcode is closed, it writes the setting back so Xcode uses its normal folder; when the drive is back and Xcode is closed, it points the setting at the drive again.</p>
+  <p>It is the first move in the rollout. It stays hidden in the app until a tester's entry is in the verify log, and its sheet says so. Not yet tried on a real Mac. What the sheet tells you before you start:</p>
+  <ul>{{xcodeKnow}}</ul>
+
+  <h2 id="archives">Archives are different</h2>
+  <p>Archives hold the builds you shipped, with their debug symbols. Xcode cannot rebuild them into the same thing, so they are not regenerable. Their key is <code>IDECustomDistributionArchivesLocation</code>, and Xcode does not migrate existing archives for you. Outboard treats them as "Can't be replaced": the consent sheet makes Cancel the default button, says that Time Machine may not back up the drive, and the move is the last one in the rollout.</p>
+
+  <h2 id="cant">What can't move</h2>
+  <p>Simulator runtimes are disk images that Xcode manages. People report simulators failing to load after a link or an alias to an external CoreSimulator folder (Apple Developer Forums, read through search summaries only, so low confidence). Apple's own routes are removing runtimes you don't need in Xcode › Settings › Components, or saving one for later with <code>xcodebuild -downloadPlatform iOS -exportPath</code> and restoring it with <code>xcodebuild -importPlatform</code>. Outboard lists simulator runtimes as not offered.</p>
+
+  <h2 id="bar">What the Mac's bar shows</h2>
+  <div class="card pad">
+    <div class="bar" role="img" aria-label="Sample data: Macintosh HD, 245 GB. Used 149 GB, kept until you confirm 87 GB, free 9 GB."><i class="seg used"></i><i class="seg moved"></i><i class="seg free"></i></div>
+    <ul class="bar-key" aria-hidden="true"><li>Used 149 GB</li><li class="m">Kept until you confirm 87 GB</li><li class="f">Free 9 GB</li></ul>
+  </div>
+  <p class="fine">Sample data: the three folders of the sample plan, moved. A moved folder stays on the Mac, hatched, until you confirm; the space comes back when you empty the Trash.</p>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="sources">
+    <li>Apple Developer Forums, <a href="https://developer.apple.com/forums/thread/812321">thread 812321</a> (framework tests fail with DerivedData on an external drive).</li>
+    <li>swift-package-manager, <a href="https://github.com/swiftlang/swift-package-manager/issues/6948">issue 6948</a> (plugins and a custom external DerivedData).</li>
+    <li>fastlane, <a href="https://github.com/fastlane/fastlane/pull/12232">pull request 12232</a> (<code>IDECustomDerivedDataLocation</code>) and <a href="https://github.com/fastlane/fastlane/pull/8898">pull request 8898</a> (<code>IDECustomDistributionArchivesLocation</code>).</li>
+    <li>Apple Developer Forums, <a href="https://developer.apple.com/forums/thread/733640">thread 733640</a> (the Locations pane for Derived Data and Archives).</li>
+    <li>Apple, <a href="https://developer.apple.com/documentation/xcode/downloading-and-installing-additional-xcode-components">Downloading and installing additional Xcode components</a> (Components, <code>-downloadPlatform</code>, <code>-importPlatform</code>).</li>
+    <li><a href="https://pewpewthespells.com/blog/xcode_build_locations.html">pewpewthespells, Xcode build locations</a> (describes <code>IDEDerivedDataPathMode</code> with a relative path only).</li>
+  </ul>
+  <p class="fine">Outboard is not affiliated with or endorsed by Apple or any app it lists. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+</article>

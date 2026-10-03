@@ -1,0 +1,62 @@
+name: A move went wrong, or an app broke
+description: Something changed that you did not expect after Outboard moved a folder, or the guard did the wrong thing.
+title: "Move problem: "
+labels: ["move-problem"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. This is the most useful report there is: it becomes a test and, if the recipe is wrong, a change to the recipe.
+        **If a file is missing or changed, stop using Outboard and do not empty the Trash.** The original of every move is kept next to where
+        it was as `<name>.before-move` until you confirm, and after you confirm it is in the Trash. Look there first.
+        Never paste file contents. Outboard's activity log (Activity > Export) holds `~`-relative paths, sizes and step names; read it once
+        before posting and remove anything you do not want public.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What went wrong?
+      options:
+        - A move stopped part way, or the copy comparison reported a difference
+        - The app I moved does not work with the new location
+        - The app recreated an empty folder or reset its settings after the drive went away
+        - The Drive Guard did not notice that the drive was gone, or noticed when it was not
+        - Outboard offered a move for a folder it should not have
+        - Roll back or Return to Mac did not restore what I expected
+        - A file is missing or different
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: recipe
+    attributes:
+      label: Which catalogue entry?
+      description: The name on the plan row, for example "Xcode build data" or "Ollama models".
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you saw. The app and its version, and whether it was running.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: The activity log lines for this move
+      description: Paste the lines from Activity > Export, or from the journal file in your Outboard support folder. Check them for anything private first.
+      render: text
+  - type: input
+    id: system
+    attributes:
+      label: macOS version, chip and the drive
+      placeholder: macOS 15.6, Apple silicon, USB-C SSD formatted APFS
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Outboard version
+      placeholder: 0.1.0-beta.1
+    validations:
+      required: true

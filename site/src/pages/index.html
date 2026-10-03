@@ -1,0 +1,201 @@
+<!--meta {"title": "Outboard for Mac: move big app folders to an external SSD, compared file by file", "description": "Outboard finds the big folders apps keep on your Mac and, for the apps where the method is known, moves them to your external SSD: copied, compared file by file, the original kept until you confirm, every step logged. Free, open source, offline."}-->
+<section class="hero dusk" aria-labelledby="hero-h">
+  <div class="wide hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow"><b>01</b> · Storage planner · macOS {{minMacOS}} or later</p>
+      <h1 id="hero-h">Big folders, <mark>moved alongside.</mark></h1>
+      <p class="lede">Outboard finds the big folders apps keep on your Mac and, for the apps where the method is known, moves them to an external SSD: copied, compared file by file, the original kept until you say so, every step logged.</p>
+      <p class="lede">While it is running, it tells you when the drive is unplugged and parks a note where the folder was.</p>
+      <p class="actions"><a class="button" href="/download/"><svg aria-hidden="true"><use href="#i-down"/></svg><span class="sep"></span>Download free</a> <a class="button secondary" href="{{repoURL}}">View source</a></p>
+      <p class="facts">Free · Open source · No network · Nothing deleted without you</p>
+      <p class="tried">Not yet tried on a real Mac.</p>
+    </div>
+    <div class="stage" data-tilt>
+      <div class="scene" id="hero-scene">
+        <i class="water" aria-hidden="true"></i>
+        <div class="lamp" aria-hidden="true"><i class="lamp-glow"></i><i class="lamp-core"></i><i class="lamp-post"></i></div>
+        <div class="dock" aria-hidden="true">
+          <div class="slab quay">
+            <p class="bar-h"><span>Macintosh HD</span><b>9 GB free</b></p>
+            <div class="bar"><i class="seg used"></i><i class="seg moved"></i><i class="seg free"></i></div>
+            <ul class="outlines">
+              <li><i class="outline"></i><i class="tether"></i><span class="note"><span class="label">Note</span>{{noteLead}}</span></li>
+              <li><i class="outline"></i><i class="tether"></i><span class="note"><span class="label">Note</span>{{noteLead}}</span></li>
+              <li><i class="outline"></i><i class="tether"></i><span class="note"><span class="label">Note</span>{{noteLead}}</span></li>
+            </ul>
+          </div>
+          <i class="gangway"></i>
+          <div class="slab hull">
+            <p class="bar-h"><span>Outboard</span><b>913 GB free</b></p>
+            <div class="bar"><i class="seg moved"></i><i class="seg free"></i></div>
+          </div>
+        </div>
+        <ul class="crates" aria-hidden="true">
+          <li><span>Xcode build data</span><b>{{planXcode}}</b><em class="tag">Official setting</em></li>
+          <li><span>Ollama models</span><b>{{planOllama}}</b><em class="tag">Community method</em></li>
+          <li><span>iPhone backups</span><b>{{planIos}}</b><em class="tag">Community method</em></li>
+        </ul>
+        <div class="report-wrap">
+          <figure class="report" id="hero-card" role="img" aria-label="Illustration with sample data: the Outboard Storage Plan card. Your Mac could free up to {{planTotal}}: Xcode build data {{planXcode}}, Ollama models {{planOllama}}, iPhone backups {{planIos}}. Measured on this Mac. Nothing was moved. On the back: sizes are what these folders take on disk, and space comes back when the originals are trashed and the Trash is emptied. Also on this Mac: Photos library {{planPhotos}}. Photos moves it itself; Outboard shows the steps.">
+            <div class="face front">
+              <p class="card-brand"><svg aria-hidden="true"><use href="#i-mark"/></svg>Outboard<span class="tag aqua">Sample data</span></p>
+              <p class="card-h">Your Mac could free up to <b>{{planTotal}}</b></p>
+              <ul class="card-rows">
+                <li><span>Xcode build data</span><b>{{planXcode}}</b><i class="rb"></i></li>
+                <li><span>Ollama models</span><b>{{planOllama}}</b><i class="rb"></i></li>
+                <li><span>iPhone backups</span><b>{{planIos}}</b><i class="rb"></i></li>
+              </ul>
+              <p class="card-cov">Measured on this Mac. Nothing was moved.</p>
+              <p class="card-prov">{{websiteShort}}</p>
+            </div>
+            <div class="face back">
+              <p class="card-foot">Sizes are what these folders take on disk. Space comes back when the originals are trashed and the Trash is emptied.</p>
+              <p class="card-nc"><span class="label">Also on this Mac</span>Photos library {{planPhotos}}. Photos moves it itself; Outboard shows the steps.</p>
+            </div>
+          </figure>
+        </div>
+        <button class="button secondary report-flip" type="button" data-flip aria-controls="hero-card" aria-pressed="false" hidden>Turn the card over</button>
+        <button class="button dock-leave" type="button" data-sweep="Plug it back in" data-sweep-said="Sample: the drive left. Three notes are parked where the folders were, and the lamp is dimmed. The 87 GB on the Mac is still there, kept until you confirm." data-sweep-reset="Sample: the drive is back. The links are back and the lamp is lit." aria-controls="hero-scene" aria-pressed="false" hidden>Unplug the drive</button>
+        <p class="sr-only" role="status" aria-live="polite" data-sweep-status></p>
+      </div>
+    </div>
+  </div>
+  <p class="caption">Illustration with sample data. Outboard is not affiliated with or endorsed by any app it lists. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+</section>
+
+<section class="wrap strip" aria-label="Facts">
+  <dl class="proof reveal">
+    <div><dt>network calls</dt><dd>0</dd></div>
+    <div><dt>deletes: the Trash, after you confirm</dt><dd>0</dd></div>
+    <div><dt>every file compared before the switch</dt><dd>SHA-256</dd></div>
+    <div><dt>log, written before each step</dt><dd><i class="dot" aria-hidden="true"></i>1</dd></div>
+  </dl>
+</section>
+
+<section id="problem" class="wrap">
+  <div class="sec-head">
+    <h2>Where the space went.</h2>
+    <p class="lede">A 256 GB Mac fills up with things you never chose to keep there.</p>
+  </div>
+  <div class="cards">
+    <article class="card reveal" data-tilt><h3>System Data is 381 GB. What is it?</h3><p class="meta">r/mac · 31 Aug 2026 · 912 points</p><p>Outboard measures the folders it knows. Some of System Data is not movable by any app, and it says so.</p></article>
+    <article class="card reveal" data-tilt><h3>A 256 GB Mac mini plus a 1 TB SSD: smart or stupid?</h3><p class="meta">r/macmini · 9 Sep 2026 · 51 points, 89 comments</p><p>For some apps, with known methods. Outboard lists which, and says why for the rest.</p></article>
+    <article class="card reveal" data-tilt><h3>Where do my Ollama models go, and why is my disk full again?</h3><p class="meta">A local-model question, from setup guides</p><p><code>~/.ollama/models</code>. Outboard measures it and can move it.</p></article>
+  </div>
+  <p class="fine">Questions paraphrased from public threads, counts as archived on 3 October 2026. No names are kept.</p>
+</section>
+
+<section id="how" class="wrap">
+  <div class="sec-head">
+    <h2>How a move works.</h2>
+    <p class="lede">Each line is something the app does and checks, and each is in a log you can read.</p>
+  </div>
+  <ol class="rules reveal">
+    <li><h3>{{eduS1}}</h3><p>Every file is compared by size and SHA-256. One difference stops the move, and your Mac stays as it was.</p><code>copy · compare</code></li>
+    <li><h3>{{eduS2}}</h3><p>The app's own setting is pointed at the copy, or a link is put where the folder was.</p><code>switch</code></li>
+    <li><h3>{{eduS3}}</h3><p>The folder is renamed <code>name.before-move</code>. Until you confirm, you can roll back.</p><code>.before-move</code></li>
+    <li><h3>{{eduS4}}</h3><p>Each step is written to a log before it happens. If the log can't be written, nothing moves.</p><code>journal</code></li>
+  </ol>
+  <p class="after">After you confirm, the original goes to the Trash. Space comes back when you empty it. <a href="/how-a-move-works/">The whole sequence, and what Outboard reads and never does</a>.</p>
+</section>
+
+<section id="catalogue" class="wrap">
+  <div class="sec-head">
+    <h2>What it moves. What it never moves.</h2>
+    <p class="lede">Outboard knows {{knownCount}} apps. More are added in updates; the list is data, and anyone can propose one.</p>
+  </div>
+  <div class="pair">
+    <div>
+      <p class="pair-head"><b>Moves it does itself</b><span class="label">{{autoCount}} entries</span></p>
+      <ul class="crates col reveal" data-tilt>{{cratesAuto}}</ul>
+      <p class="pair-head"><b>Guided: the app moves it, Outboard shows the steps</b><span class="label">{{guidedCount}} entries</span></p>
+      <ul class="crates col muted reveal" data-tilt>{{cratesGuided}}</ul>
+    </div>
+    <article class="card never reveal" data-tilt>
+      <h3>Never</h3>
+      <ul>{{neverHome}}</ul>
+    </article>
+  </div>
+  <p class="after">Each entry has its sources and what the app does when the drive is away. <a href="/what-it-moves/">Every entry</a>.</p>
+</section>
+
+<section id="guard" class="wrap">
+  <div class="sec-head">
+    <h2>The Drive Guard, explained.</h2>
+    <p class="lede">Outboard {{guardVerb}} a missing drive while it is running, and parks a note where the moved folder was.</p>
+  </div>
+  <div class="duo">
+    <figure class="leave reveal" role="img" aria-label="Illustration with sample data: the Mac after the drive left. The bar still shows 87 GB kept until you confirm. Three outlines each have a note pinned to them, and the guard lamp is dimmed.">
+      <div class="slab" aria-hidden="true">
+        <p class="bar-h"><span>Macintosh HD</span><em class="tag">Drive away</em></p>
+        <div class="bar"><i class="seg used"></i><i class="seg moved"></i><i class="seg free"></i></div>
+        <ul class="outlines">
+          <li><i class="outline"></i><span class="note"><span class="label">Note</span>{{noteLead}}</span></li>
+          <li><i class="outline"></i><span class="note"><span class="label">Note</span>{{noteLead}}</span></li>
+          <li><i class="outline"></i><span class="note"><span class="label">Note</span>{{noteLead}}</span></li>
+        </ul>
+        <p class="lamp-line"><i></i>Guard lamp dimmed: the drive is away and the notes are parked.</p>
+      </div>
+      <figcaption class="fine">Illustration with sample data. The 87 GB stays hatched because the originals are still on the Mac.</figcaption>
+    </figure>
+    <div class="reveal">
+      <p class="label">The note, word for word</p>
+      <p class="note file"><span class="label">Note</span>{{placeholderText}}</p>
+    </div>
+  </div>
+  <ol class="rules reveal">
+    <li><h3>Ejected in Finder</h3><p>A note is parked. When the drive is back: a quick check and a {{sampleFiles}}-file sample, then the link is put back.</p><code>park · unpark</code></li>
+    <li><h3>Pulled out without ejecting</h3><p>You are asked to check your files first. Every file that has not changed since the copy is compared.</p><code>Check and reconnect</code></li>
+    <li><h3>Something new appeared where the folder was</h3><p>Nothing is touched. You choose.</p><code>Conflict</code></li>
+  </ol>
+  <p class="after"><a href="/guides/unplug-external-drive-that-holds-app-data-mac/">What apps do when a drive disappears, and what no app can prevent</a>.</p>
+</section>
+
+<section id="limits" class="read">
+  <h2>Honest limits.</h2>
+  <ul class="limits reveal">
+    <li><b>{{eduLimit}}</b></li>
+    <li>The link points at nothing from the moment the drive disappears until the guard parks it: seconds while Outboard runs, and until the next launch when it doesn't.</li>
+    <li>Apps that had a file open on the drive probably need a restart after it returns.</li>
+    <li>Time Machine may not back up the drive unless you add it.</li>
+    <li>Outboard says nothing about speed; it doesn't measure it.</li>
+    <li>Not yet tried on a real Mac.</li>
+  </ul>
+</section>
+
+<section id="faq" class="wrap">
+  <div class="faq">
+    <div class="faq-head">
+      <p class="eyebrow"><b>02</b> · Questions</p>
+      <h2>Before you try it.</h2>
+      <p class="lede">Short answers. The long ones are in the guides.</p>
+    </div>
+    <div class="faq-list reveal">
+      <details><summary>Does this make my drive work like internal storage?</summary><!-- no-claim-ok: the question quotes a claim the answer denies --><p>No. Outboard moves the folders it knows to the drive and points the app at them. The app still runs from your Mac, and a drive on a cable is not the Mac's own storage. Outboard says nothing about speed.</p></details>
+      <details><summary>What happens if I unplug the drive?</summary><p>While Outboard is running it parks a note where the folder was and says so in its window and menu bar. When the drive is back it checks it and puts things back. It can't stop you unplugging a drive or make that harmless. <a href="/guides/unplug-external-drive-that-holds-app-data-mac/">The long answer</a>.</p></details>
+      <details><summary>Why doesn't Outboard move my Photos library itself?</summary><p>Photos moves its own library, and Apple documents the steps. Outboard shows them, opens Photos and checks your drive first. Apple's page on moving a library mentions Photos creating a new empty library, which is why this stays Photos' own move.</p></details>
+      <details><summary>Why does it refuse my drive?</summary><p>Outboard refuses a network volume, a drive formatted FAT or exFAT (apps need APFS), the Time Machine disk, a disk image and, for the moves it does itself, a spinning hard disk. Each refusal shows its reason. Changing a format erases the drive, so Outboard never does it; it shows the Disk Utility steps.</p></details>
+      <details><summary>Is it really free?</summary><p>Yes. MIT licence, no account, no trial, no paid tier. The source is on <a href="{{repoURL}}">GitHub</a>.</p></details>
+      <details><summary>Why is the app unsigned?</summary><p>Until there is a Developer ID, public builds are unsigned betas, so macOS asks for one extra step the first time you open it. The <a href="/download/">download page</a> shows it.</p></details>
+      <details><summary>What does "Not yet tried on a real Mac" mean?</summary><p>Nobody has run Outboard on a real Mac with a real external drive yet. Every move that changes anything stays hidden in the app until a named tester has run it and the public <a href="{{repoURL}}/blob/main/docs/VERIFY_LOG.md">verify log</a> says so.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" aria-label="Source">
+  <div class="card src reveal" data-tilt>
+    <p>Open source under the MIT License. Recipes are data: propose one with a pull request. Every push runs the safety checks and the banned-phrase check (<a href="{{repoURL}}/blob/main/.github/workflows/ci.yml">the workflow</a>).</p>
+    <a class="button secondary" href="{{repoURL}}">View source</a>
+  </div>
+</section>
+
+<section class="finale dusk" aria-labelledby="finale-h">
+  <div class="lamp" aria-hidden="true"><i class="lamp-glow"></i><i class="lamp-core"></i><i class="lamp-post"></i></div>
+  <div class="wrap">
+    <div class="podium"><img class="icon" src="/icon.png" width="176" height="176" alt="Outboard app icon" loading="lazy" decoding="async"></div>
+    <h2 id="finale-h">Room to breathe. It's free.</h2>
+    <p class="actions"><a class="button" href="/download/"><svg aria-hidden="true"><use href="#i-down"/></svg><span class="sep"></span>Download free</a> <a class="button secondary" href="{{repoURL}}">View source</a></p>
+    <p class="facts">macOS {{minMacOS}} or later · Apple silicon and Intel · MIT licence · {{statusShort}}</p>
+  </div>
+</section>
+<script type="application/ld+json">{{softwareJSON}}</script>

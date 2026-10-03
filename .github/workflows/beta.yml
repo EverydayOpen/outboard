@@ -1,0 +1,187 @@
+# Tag vX.Y.Z-beta.N -> unsigned (ad-hoc signed) universal build as a GitHub pre-release, for testers.
+# Gatekeeper blocks it until the tester allows it once. Signed, notarized releases (plain vX.Y.Z tags) are release.yml's job.
+#
+#   gate     ubuntu: the safety greps, repo checks, recipe validator, changelog and site checks (the same list as ci.yml `checks`). GNU grep, so not on the macOS runner.
+#   test     macOS: swift test with the real-volume tests on. A beta is never built from a red tree.
+#   build    after gate and test: checkout, xcodegen, xcodebuild, smoke test, zip -> artifact. Read-only token, not kept in the checkout.
+#   publish  tag pushes only: the zip, its SHA-256 in the notes and as a .sha256 asset -> GitHub pre-release. The only job with contents: write; no checkout, no build code.
+name: beta
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"]
+  workflow_dispatch:   # runs gate, test and build and uploads the zip as an artifact only, even when started on a tag ref; nothing is published
+
+permissions:
+  contents: read
+
+env:
+  APP: Outboard
+  XCODEGEN: "2.46.0"   # checksum-pinned, same pin as ci.yml, release.yml, screens.yml, fixtures.yml and codeql.yml: bump all together
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0   # repo_checks.sh reads every commit's author, committer and message
+          persist-credentials: false
+      - run: bash tools/safety_greps.sh
+      - run: bash tools/repo_checks.sh
+      - run: python3 tools/check_recipes.py
+      - run: python3 tools/changelog.py --self-test
+      - run: python3 tools/build_site.py --check
+      - run: bash tools/doctor.sh --ci
+
+  test:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      OUTBOARD_DISK_TESTS: "1"   # without it every real-volume, unplug and crash-recovery test skips itself
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app && xcodebuild -version
+
+      - name: swift test (real-volume tests on)
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee swift.log
+
+      # A skipped invariant test is not a pass (tools/check_test_log.sh).
+      - name: Fail if the real-volume tests were skipped
+        run: bash tools/check_test_log.sh swift.log
+
+      # A test that dies before its own cleanup must not leave an image attached.
+      - name: Detach any test image still mounted
+        if: always()
+        run: bash tools/disk_image.sh cleanup
+
+  build:
+    needs: [gate, test]
+    runs-on: macos-26
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write       # signs the provenance attestation (Sigstore)
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app && xcodebuild -version
+
+      - name: Generate project (XcodeGen, checksum-pinned)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          test -d "$RUNNER_TEMP/xcodegen/share/xcodegen/SettingPresets"   # without them xcodegen only prints a warning
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+
+      - name: Build (universal, ad-hoc signed)
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"; [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF_TYPE" == tag ]] || VERSION="0.0.0-dev"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          # Hardened runtime off for the ad-hoc signature; release.yml turns it on with Developer ID.
+          xcodebuild -project Outboard.xcodeproj -scheme Outboard -configuration Release \
+            -destination 'generic/platform=macOS' -derivedDataPath build/dd \
+            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM="" ENABLE_HARDENED_RUNTIME=NO \
+            MARKETING_VERSION="${VERSION%%-*}" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" build
+          mkdir -p build/out && ditto "build/dd/Build/Products/Release/$APP.app" "build/out/$APP.app"
+          lipo -archs "build/out/$APP.app/Contents/MacOS/$APP"
+
+      # The shipped app must not know its demo-mode launch arguments (App/Demo.swift is DEBUG-only), and the manifest must be the one
+      # BUILD_PLAN section 1 describes: one instance, one usage string, a regular window app.
+      - name: Check the bundle (no demo code, one instance, one usage string)
+        run: |
+          A="build/out/$APP.app"
+          DEMO=$(strings "$A/Contents/MacOS/$APP" | grep -c 'demoScenario' || true)
+          [ "$DEMO" = 0 ] || { echo "::error::$APP contains demo-mode code: the Release build must not include #if DEBUG code"; exit 1; }
+          [ "$(/usr/libexec/PlistBuddy -c 'Print :LSMultipleInstancesProhibited' "$A/Contents/Info.plist")" = true ] || { echo "::error::LSMultipleInstancesProhibited must be true"; exit 1; }
+          USAGE=$(/usr/libexec/PlistBuddy -c Print "$A/Contents/Info.plist" | grep -c UsageDescription || true)
+          [ "$USAGE" = 1 ] || { echo "::error::expected exactly one usage-description string (NSRemovableVolumesUsageDescription), found $USAGE"; exit 1; }
+
+      # Same test as release.yml's "Launch smoke test (arm64)". Outboard reads nothing but sizes until the user chooses a drive and
+      # moves nothing until the user confirms, so launching it on the runner is harmless.
+      - name: Launch smoke test
+        run: |
+          "build/out/$APP.app/Contents/MacOS/$APP" & PID=$!
+          sleep 10
+          if kill -0 "$PID" 2>/dev/null; then kill "$PID"; echo "$APP launched and stayed up for 10 s"; exit 0; fi
+          STATUS=0; wait "$PID" || STATUS=$?
+          echo "::error::$APP quit within 10 s of launch (exit status $STATUS)"
+          sleep 5
+          for F in $(ls -t ~/Library/Logs/DiagnosticReports/"$APP"* 2>/dev/null | head -3); do echo "== $F"; cat "$F"; done
+          exit 1
+
+      - name: Zip
+        run: ditto -c -k --keepParent "build/out/$APP.app" "build/$APP-$VERSION.zip"
+
+      # Provenance: ties the zip to this repo, workflow and commit. Check with `gh attestation verify <zip> -R <owner>/<repo>` (docs/RELEASING.md).
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        with:
+          subject-path: build/${{ env.APP }}-${{ env.VERSION }}.zip
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ env.APP }}-${{ env.VERSION }}
+          path: build/${{ env.APP }}-${{ env.VERSION }}.zip
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: github.event_name == 'push' && github.ref_type == 'tag'   # a manual run on a tag ref publishes nothing
+    runs-on: ubuntu-latest   # only gh runs here
+    timeout-minutes: 10
+    permissions:
+      contents: write   # gh release create
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: build
+          merge-multiple: true   # the run's one artifact, straight into build/
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          (cd build && sha256sum "$APP-$VERSION.zip" > "$APP-$VERSION.zip.sha256")
+          SUM=$(cut -d' ' -f1 "build/$APP-$VERSION.zip.sha256")
+          cat > build/notes.md <<EOF
+          **Unsigned beta for testers. Not yet tried on a real Mac.** Outboard isn't signed with an Apple Developer ID yet, so macOS blocks the first launch.
+
+          1. Download \`$APP-$VERSION.zip\`, double-click it and move **$APP** to Applications.
+          2. Right-click (or Control-click) **$APP** › **Open**, then **Open** again. On macOS 15 and later, open it once,
+             then go to System Settings › Privacy & Security and click **Open Anyway**.
+
+          SHA-256 of the zip: \`$SUM\`, also attached as \`$APP-$VERSION.zip.sha256\` (check with \`shasum -a 256 -c $APP-$VERSION.zip.sha256\` next to the zip), or build it yourself from source (README). Never paste a Terminal command to install it.
+
+          Outboard measures the big folders that apps keep on your Mac and makes no network connections. The moves that change anything
+          are hidden until you switch on "Show moves not yet tried on a real Mac" in Preferences, because no one has run them on a real
+          Mac yet. A move copies a folder to your drive, compares every file by size and SHA-256 and keeps your original, renamed, until
+          you confirm; every step is written to a log you can read. It requires macOS 13 or later, Apple silicon or Intel.
+          This beta doesn't update itself; download new betas from this page. **Please try one move on data you can rebuild first** (Xcode
+          build data is the first entry), keep your own backup of anything else, and report what happened in
+          [Issues](https://github.com/$GITHUB_REPOSITORY/issues): the "Tried a move" form for a result, the "Move went wrong" form for
+          a problem. What the activity log holds is paths with \`~\` for your home folder, sizes and step names, never file contents.
+
+          Outboard is not affiliated with or endorsed by any app it lists. <!-- no-claim-ok: the sentence says we make no such claim -->
+          EOF
+          gh release create "$GITHUB_REF_NAME" "build/$APP-$VERSION.zip" "build/$APP-$VERSION.zip.sha256" --prerelease --verify-tag -R "$GITHUB_REPOSITORY" \
+            --title "$APP $VERSION (unsigned beta)" --notes-file build/notes.md

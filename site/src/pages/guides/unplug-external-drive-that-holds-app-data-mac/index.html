@@ -1,0 +1,70 @@
+<!--meta {"title": "What happens if I unplug an external drive that holds app data?", "description": "Apps that keep data on an external drive fail open when it goes missing. How drives go missing on a Mac, what a guard can and cannot do, what Outboard does while it runs, and what to do yourself. Sources included."}-->
+<article class="read prose guide">
+  <p class="eyebrow"><b>G3</b> · Guide · Checked 3 October 2026 · macOS</p>
+  <h1>What happens if I unplug an external drive that holds app data?</h1>
+
+  <div class="summary">
+    <h2>The short answer</h2>
+    <ol>
+      <li>Every way of putting app data on a drive fails open when the drive is missing: the app does its first-launch thing on the Mac's own disk, with an empty library, an empty model store or a default folder.</li>
+      <li>Drives go missing more often than people expect, including by themselves, and no app can make that harmless.</li>
+      <li>Eject in Finder before you unplug, plug straight in rather than through a hub, and keep a backup of anything you cannot replace.</li>
+    </ol>
+  </div>
+
+  <h2 id="apps">What apps do</h2>
+  <ul>
+    <li><b>Photos:</b> Apple's page on moving a library describes Photos creating a new empty library when the one it was using is not available.</li>
+    <li><b>Ollama:</b> in the app's source, a models path that cannot be read is replaced by the default folder, so you get an empty store. See <a href="/guides/run-ollama-models-from-external-ssd-mac/#away">G2</a>.</li>
+    <li><b>Docker Desktop:</b> its own disk image setting has a long record of problems on external drives, including failing at login because the volume was not mounted yet (docker/for-mac issue 7437). Outboard does not move its data.</li>
+    <li><b>A link that points at nothing</b> fails closed for apps that try to open or create files under it, but not for apps that remove a folder and make a new one: those replace the link with a real folder and quietly fill the Mac's disk. This is reasoning from how links work, not a result for each app.</li>
+  </ul>
+
+  <h2 id="missing">How drives go missing</h2>
+  <ul>
+    <li><b>Sleep.</b> Many people report external drives ejecting during sleep and "Disk Not Ejected Properly" on wake, across macOS versions (Apple Community thread 254322044). That is forum evidence. Apple's note 101847 is about internal SATA drives in the Mac Pro (2023) and is not evidence about external drives.</li>
+    <li><b>Not mounted yet.</b> At login the drive may not be mounted when an app starts. An encrypted drive stays locked until it is unlocked.</li>
+    <li><b>On purpose.</b> A laptop that leaves the desk. That is normal use, and it is why a drive-away state has to be quiet and recoverable.</li>
+    <li><b>Renamed, reformatted or replaced.</b> If a stale <code>/Volumes/Name</code> folder exists, a second drive with the same name mounts as "Name 1" (user reports). A link that goes by name then points at the wrong drive.</li>
+    <li><b>The drive dies.</b> Time Machine skips external drives by default (Macworld), so the data may have no second copy.</li>
+  </ul>
+
+  <h2 id="while">What Outboard does while it runs</h2>
+  <ul>
+    <li><b>Unplugged or ejected.</b> After a {{parkSeconds}}-second pause in case the drive comes straight back, the link is moved into Outboard's own folder and a read-only note is put where the folder was. For Xcode build data the setting is written back instead, once Xcode is closed. The note reads:</li>
+  </ul>
+  <p class="note file"><span class="label">Note</span>{{placeholderText}}</p>
+  <ul>
+    <li><b>Back after a clean eject.</b> Outboard checks the drive's identity (its UUID and a sentinel file), runs a quick check against the list it made when it copied, hashes a sample of {{sampleFiles}} files, and then puts the link back.</li>
+    <li><b>Back after a removal without ejecting.</b> It asks you to press "Check and reconnect", which compares every file that has not changed since it was copied. Files that changed since are listed, not compared, because the app may have written to them.</li>
+    <li><b>Something new in the way.</b> If an app made a new folder where the note or link was, Outboard touches nothing and asks you to choose.</li>
+  </ul>
+  <p>{{guardOn}}</p>
+
+  <h2 id="cannot">What it cannot do</h2>
+  <ul>
+    <li>The time between the unplug and the note is {{parkSeconds}} seconds or more while Outboard runs, and open-ended when it isn't. {{guardQuit}}</li>
+    <li>It cannot veto an eject, and it cannot stop you pulling a cable.</li>
+    <li>Apps that kept a file open on the drive probably need a restart after it returns, because a returning drive is a new mount. This is by reasoning, not from a source we fetched, and not tried on a real Mac.</li>
+    <li>macOS can block an app's access to a removable volume (the "Removable Volumes" privacy category). Outboard shows that as "macOS blocked access to the drive", never as "drive missing".</li>
+  </ul>
+
+  <h2 id="todo">What to do</h2>
+  <ul>
+    <li>Eject in Finder before you unplug. A pull works as far as the note goes, but it is the case that needs the full check on return.</li>
+    <li>Use a direct cable rather than a hub where you can, and look at your display-off sleep setting: the one that keeps disks from sleeping when the display is off is the setting people most often report helping. Outboard doesn't change your power settings.</li>
+    <li>If the drive holds anything you cannot replace, add it to Time Machine or keep another copy. An encrypted APFS volume is the format Outboard prefers for backups.</li>
+    <li>If a move went wrong, <a href="{{moveProblemURL}}">tell us</a>; the activity log in the app lists every step with the time it happened.</li>
+  </ul>
+  <p class="tried">Not yet tried on a real Mac: nothing on this page about Outboard's own behaviour has been run on one.</p>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="sources">
+    <li>Apple, <a href="https://support.apple.com/en-us/108345">Move your Photos library</a>.</li>
+    <li>Apple Community, <a href="https://discussions.apple.com/thread/254322044">thread 254322044</a> (drives ejecting during sleep) and Apple support note <a href="https://support.apple.com/en-il/101847">101847</a> (Mac Pro, internal SATA drives).</li>
+    <li>docker/for-mac, <a href="https://github.com/docker/for-mac/issues/7437">issue 7437</a> (failing at login when the volume is not mounted).</li>
+    <li>Apple, <a href="https://support.apple.com/guide/mac-help/disks-you-can-use-with-time-machine-mh15139/mac">Disks you can use with Time Machine</a>, and Macworld, <a href="https://www.macworld.com/article/229391/how-to-make-sure-time-machine-backs-up-external-drives.html">how to make sure Time Machine backs up external drives</a>.</li>
+    <li>Ollama source at v0.35.1, <a href="https://github.com/ollama/ollama/blob/v0.35.1/app/server/server.go"><code>app/server/server.go</code></a>.</li>
+  </ul>
+  <p class="fine">Outboard is not affiliated with or endorsed by any app it lists. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+</article>

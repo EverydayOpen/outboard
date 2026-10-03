@@ -1,0 +1,341 @@
+# Tag vX.Y.Z -> signed, notarized, stapled DMG on this repo's GitHub Releases. One-time setup: docs/RELEASING.md.
+# Until a Developer ID exists, publish unsigned betas with beta.yml (vX.Y.Z-beta.N tags) instead.
+#
+#   gate         ubuntu, no secrets: preflight (changelog row, placeholders, one base URL, releasesRepo, DMG name), the safety greps (GNU grep),
+#                repo checks, the recipe validator, changelog and site checks
+#   test         macOS, no secrets, no environment: swift test with the real-volume tests on
+#   build        after gate and test, the only job with the signing secrets: notarytool credentials -> archive -> bundle checks -> arm64 launch
+#                smoke test -> notarize app -> DMG -> notarize DMG. Deletes the temporary keychain, cert.p12 and AuthKey.p8 when it ends.
+#   smoke-intel  launches the same signed app on an Intel runner
+#   publish      only after both smoke tests: provenance attestation of both DMG names, then the GitHub Release (notes from CHANGELOG.md plus
+#                the DMG's SHA-256) with the DMG twice (Outboard-X.Y.Z.dmg, and the fixed-name Outboard.dmg, a stable
+#                releases/latest/download link that the site's /download/ page does not use yet) and a SHA256SUMS asset covering both.
+#                No checkout, no repo code: build writes notes, checksums and both DMGs into the artifact.
+#
+# No updater framework and no appcast (BUILD_PLAN section 1): the app never goes online, and the site's latest-DMG link is the
+# update path. No entitlements either: Outboard is not sandboxed and asks for none. Its one usage string is
+# NSRemovableVolumesUsageDescription (the external drive); anything else fails the bundle check below.
+#
+# Secrets (in the protected "release" environment; build and publish both use it, so a required reviewer approves
+# twice: once to build, once to publish after the smoke tests pass; gate and test use no environment and see no secret):
+#   DEVELOPER_ID_P12_BASE64    base64 of the Developer ID Application identity (.p12, legacy PBE)
+#   DEVELOPER_ID_P12_PASSWORD  password of that .p12
+#   KEYCHAIN_PASSWORD          any random string (temporary CI keychain)
+#   DEVELOPMENT_TEAM           Apple Team ID (10 characters)
+#   ASC_KEY_P8_BASE64          base64 of the App Store Connect Team API key (AuthKey_XXXXXXXXXX.p8)
+#   ASC_KEY_ID                 that key's Key ID
+#   ASC_ISSUER_ID              that key's Issuer ID
+name: release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]   # plain X.Y.Z only; vX.Y.Z-beta.N tags go to beta.yml
+
+permissions:
+  contents: read
+
+env:
+  APP: Outboard
+  # Checksum-pinned XcodeGen (GitHub's digest of xcodegen.zip), never an unpinned brew install. Same pin in ci.yml,
+  # beta.yml, screens.yml, fixtures.yml and codeql.yml: bump all together.
+  XCODEGEN: "2.46.0"
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+
+defaults:
+  run:
+    shell: bash   # bash -eo pipefail
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0   # repo_checks.sh reads every commit's author, committer and message
+          persist-credentials: false
+
+      # Everything that can fail without Xcode fails here, before any build time.
+      - name: Preflight (changelog row, placeholders, one base URL, releases repo, DMG name)
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          python3 tools/changelog.py notes "$VERSION" --format md > /dev/null \
+            || { echo "::error::CHANGELOG.md needs a '## $VERSION — YYYY-MM-DD' section with notes"; exit 1; }
+          # The website URL is baked into every copy (Help menu); doctor.sh --ci treats placeholders as todos.
+          PH="$(jq -r .baseURL site/site.json) $(grep -m1 'let website' App/Links.swift)"
+          [[ "$PH" != *REPLACE_* && "$PH" != *OWNER* ]] \
+            || { echo "::error::Replace the placeholders in site/site.json baseURL and Links.website in App/Links.swift (docs/GO_LIVE.md step 2)"; exit 1; }
+          bash tools/doctor.sh --ci || { echo "::error::One base URL everywhere: fix the ERROR lines above (docs/GO_LIVE.md step 2)"; exit 1; }
+          bash tools/safety_greps.sh || { echo "::error::The safety greps must pass on a release"; exit 1; }
+          python3 tools/check_recipes.py || { echo "::error::The recipe catalogue must pass the validator on a release"; exit 1; }
+          [ "$(jq -r .releasesRepo site/site.json)" = "$GITHUB_REPOSITORY" ] || { echo "::error::site/site.json releasesRepo != $GITHUB_REPOSITORY"; exit 1; }
+          [[ "$APP" =~ ^[A-Za-z0-9._-]+$ ]] && [ "$(jq -r .dmgName site/site.json)" = "$APP.dmg" ] || { echo "::error::APP must be letters, digits, . _ - only (GitHub renames other asset names) and site/site.json dmgName must be $APP.dmg"; exit 1; }
+
+      - run: bash tools/repo_checks.sh
+      - run: python3 tools/changelog.py --self-test
+      - run: python3 tools/build_site.py --check
+
+  test:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      OUTBOARD_DISK_TESTS: "1"   # without it every real-volume, unplug and crash-recovery test skips itself
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode 26
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.6.app
+          xcodebuild -version
+
+      # The real-volume tests attach APFS disk images, copy to them, pull them away and check recovery; a release is never built from a
+      # red tree. A test that dies before its own cleanup must not leave an image attached.
+      - name: swift test (real-volume tests on)
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee swift.log
+
+      # A skipped invariant test is not a pass (tools/check_test_log.sh).
+      - name: Fail if the real-volume tests were skipped
+        run: bash tools/check_test_log.sh swift.log
+
+      - name: Detach any test image still mounted
+        if: always()
+        run: bash tools/disk_image.sh cleanup
+
+  build:
+    needs: [gate, test]
+    runs-on: macos-26
+    environment: release
+    permissions:
+      contents: read
+    timeout-minutes: 120   # ~15 min build + two notarizations of up to 45 min each
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      # Before any step has a secret in its env. Layout per XcodeGen's scripts/archive.sh.
+      - name: Generate project (XcodeGen, checksum-pinned)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          test -d "$RUNNER_TEMP/xcodegen/share/xcodegen/SettingPresets"   # without them xcodegen only prints a warning
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+
+      - name: Select Xcode 26
+        run: |
+          sudo xcode-select -s /Applications/Xcode_26.6.app
+          xcodebuild -version
+
+      # A bad App Store Connect key would otherwise fail only at notarization, after the whole build.
+      - name: Preflight (notarytool accepts the App Store Connect key)
+        env:
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          echo -n "$ASC_KEY_P8_BASE64" | base64 --decode -o "$RUNNER_TEMP/AuthKey.p8"
+          xcrun notarytool history --key "$RUNNER_TEMP/AuthKey.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" > /dev/null \
+            || { echo "::error::notarytool rejected ASC_KEY_P8_BASE64 / ASC_KEY_ID / ASC_ISSUER_ID (docs/RELEASING.md step 3)"; exit 1; }
+
+      - name: Import Developer ID certificate
+        env:
+          P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          KC="$RUNNER_TEMP/signing.keychain-db"
+          echo -n "$P12_BASE64" | base64 --decode -o "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KC"
+          security import "$RUNNER_TEMP/cert.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KC"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KC"
+          security list-keychain -d user -s "$KC"
+          # VERIFY: the runner image preinstalls Apple's Developer ID G2 intermediate in the System
+          # keychain; if codesign can't build the chain, also import
+          # https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer into "$KC".
+
+      - name: Archive and export (Developer ID, hardened runtime, universal)
+        env:
+          TEAM_ID: ${{ secrets.DEVELOPMENT_TEAM }}
+        run: |
+          plutil -replace teamID -string "$TEAM_ID" ExportOptions.plist
+          xcodebuild -project "$APP.xcodeproj" -scheme "$APP" -configuration Release \
+            -destination 'generic/platform=macOS' -archivePath "build/$APP.xcarchive" \
+            ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Developer ID Application" DEVELOPMENT_TEAM="$TEAM_ID" \
+            ENABLE_HARDENED_RUNTIME=YES OTHER_CODE_SIGN_FLAGS=--timestamp \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            archive
+          xcodebuild -exportArchive -archivePath "build/$APP.xcarchive" \
+            -exportOptionsPlist ExportOptions.plist -exportPath build/export
+          codesign -vvv --deep --strict "build/export/$APP.app"
+
+      # Universal, hardened runtime, no entitlements, exactly one usage string (the external drive), one instance.
+      - name: Check the bundle (universal, hardened, no entitlements, one usage string)
+        run: |
+          A="build/export/$APP.app"
+          ARCHS=$(lipo -archs "$A/Contents/MacOS/$APP")
+          echo "$APP: $ARCHS"
+          [[ " $ARCHS " == *" arm64 "* && " $ARCHS " == *" x86_64 "* ]] || { echo "::error::$APP is not universal ($ARCHS)"; exit 1; }
+          SIG=$(codesign -dvv "$A" 2>&1)   # a variable, not a pipe into grep -q: pipefail + SIGPIPE
+          [[ "$SIG" == *"(runtime)"* ]] || { echo "$SIG"; echo "::error::$APP is not signed with the hardened runtime"; exit 1; }
+          ENT=$(codesign -d --entitlements - "$A" 2>&1 | grep -c 'com.apple.security' || true)
+          [ "$ENT" = 0 ] || { codesign -d --entitlements - "$A"; echo "::error::$APP must ship with no entitlements"; exit 1; }
+          PLIST=$(/usr/libexec/PlistBuddy -c Print "$A/Contents/Info.plist")
+          USAGE=$(printf '%s\n' "$PLIST" | grep -c 'UsageDescription' || true)
+          [ "$USAGE" = 1 ] && [[ "$PLIST" == *NSRemovableVolumesUsageDescription* ]] || { printf '%s\n' "$PLIST" | grep UsageDescription; echo "::error::$APP must ship with exactly one usage string, NSRemovableVolumesUsageDescription"; exit 1; }
+          [ "$(/usr/libexec/PlistBuddy -c 'Print :LSMultipleInstancesProhibited' "$A/Contents/Info.plist")" = true ] || { echo "::error::LSMultipleInstancesProhibited must be true"; exit 1; }
+          # Demo mode and the crash-injection hooks are DEBUG-only: the shipped app must not know its launch arguments.
+          DEMO=$(strings "$A/Contents/MacOS/$APP" | grep -c 'demoScenario' || true)
+          [ "$DEMO" = 0 ] || { echo "::error::$APP contains demo-mode code: the Release build must not include #if DEBUG code"; exit 1; }
+
+      # Every build launches before it ships. Keep in sync with smoke-intel. The app measures sizes after launch and moves
+      # nothing until the user chooses a drive and confirms a move.
+      - name: Launch smoke test (arm64)
+        run: |
+          "build/export/$APP.app/Contents/MacOS/$APP" & PID=$!
+          sleep 10
+          if kill -0 "$PID" 2>/dev/null; then kill "$PID"; echo "$APP launched and stayed up for 10 s"; exit 0; fi
+          STATUS=0; wait "$PID" || STATUS=$?
+          echo "::error::$APP quit within 10 s of launch (exit status $STATUS)"
+          sleep 5   # ReportCrash writes the .ips a moment after the crash
+          for F in $(ls -t ~/Library/Logs/DiagnosticReports/"$APP"* 2>/dev/null | head -3); do echo "== $F"; cat "$F"; done
+          exit 1
+
+      # ditto keeps symlinks and permissions that upload-artifact's own zip drops.
+      - name: Zip the signed app (notarization upload + Intel smoke test)
+        run: ditto -c -k --keepParent "build/export/$APP.app" "build/$APP.zip"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: app
+          path: build/${{ env.APP }}.zip
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Notarize app, build DMG, notarize DMG
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          AUTH=(--key "$RUNNER_TEMP/AuthKey.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID")
+          # notarytool can exit 0 on an Invalid submission, so check the status and print Apple's log.
+          notarize() {
+            xcrun notarytool submit "$1" "${AUTH[@]}" --wait --timeout 45m --output-format json | tee "$RUNNER_TEMP/notary.json"
+            if [ "$(jq -r .status "$RUNNER_TEMP/notary.json")" != Accepted ]; then
+              xcrun notarytool log "$(jq -r .id "$RUNNER_TEMP/notary.json")" "${AUTH[@]}"
+              return 1
+            fi
+          }
+          notarize "build/$APP.zip"
+          xcrun stapler staple "build/export/$APP.app"
+          mkdir -p build/dmg
+          ditto "build/export/$APP.app" "build/dmg/$APP.app"
+          ln -s /Applications build/dmg/Applications
+          DMG="build/$APP-$VERSION.dmg"
+          # The DMG is built from a plain folder, not from a disk image the app works with. hdiutil intermittently fails with
+          # "Resource busy" on hosted runners; -ov overwrites the half-made file, so a retry works.
+          for i in 1 2 3 4 5; do hdiutil create -volname "$APP" -srcfolder build/dmg -ov -format ULFO "$DMG" && break; [ $i = 5 ] && exit 1; sleep $((i*5)); done
+          codesign --timestamp -s "Developer ID Application" "$DMG"
+          notarize "$DMG"
+          xcrun stapler staple "$DMG"
+          spctl -vvv --assess --type exec "build/export/$APP.app"
+          spctl -vvv --assess --type open --context context:primary-signature "$DMG"
+          echo "DMG=$DMG" >> "$GITHUB_ENV"
+
+      # Everything publish uploads, made here so publish needs no checkout (and no repo code next to its write token).
+      # SHA256SUMS is a release asset, not just a line in the editable notes; it covers both DMG names.
+      - name: Release files (notes, both DMG names, SHA256SUMS)
+        run: |
+          mkdir -p build/publish
+          cp "$DMG" "build/publish/$APP-$VERSION.dmg"
+          cp "$DMG" "build/publish/$APP.dmg"
+          python3 tools/changelog.py notes "$VERSION" --format md > build/publish/notes.md
+          (cd build/publish && shasum -a 256 "$APP-$VERSION.dmg" "$APP.dmg" > SHA256SUMS)
+          printf '\nSHA-256 of `%s-%s.dmg`: `%s`. The release also carries `SHA256SUMS` (check with `grep %s-%s.dmg SHA256SUMS | shasum -a 256 -c`, run next to the DMG).\n\n%s is not affiliated with or endorsed by any app it lists. <!-- no-claim-ok: the sentence says we make no such claim -->\n' \
+            "$APP" "$VERSION" "$(shasum -a 256 "$DMG" | cut -d' ' -f1)" "$APP" "$VERSION" "$APP" >> build/publish/notes.md
+          cat build/publish/SHA256SUMS
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dmg
+          path: build/publish
+          retention-days: 7
+          if-no-files-found: error
+
+      # The runner is thrown away, but a failed or cancelled run should still not leave the certificate, its keychain or the API key behind.
+      - name: Remove signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2> /dev/null || true
+          rm -f "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/AuthKey.p8"
+
+  smoke-intel:
+    needs: build
+    # GitHub's last Intel image (until Aug 2027). There is no hosted macOS 13 runner any more, so the deployment
+    # target itself is covered by beta testers on 2017-2019 Intel Macs.
+    runs-on: macos-15-intel
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: app
+          path: build
+
+      # Same test as build's "Launch smoke test (arm64)".
+      - name: Launch smoke test (Intel)
+        run: |
+          ditto -x -k "build/$APP.zip" build/export
+          echo "$(uname -m), macOS $(sw_vers -productVersion)"
+          "build/export/$APP.app/Contents/MacOS/$APP" & PID=$!
+          sleep 10
+          if kill -0 "$PID" 2>/dev/null; then kill "$PID"; echo "$APP launched and stayed up for 10 s"; exit 0; fi
+          STATUS=0; wait "$PID" || STATUS=$?
+          echo "::error::$APP quit within 10 s of launch (exit status $STATUS)"
+          sleep 5   # ReportCrash writes the .ips a moment after the crash
+          for F in $(ls -t ~/Library/Logs/DiagnosticReports/"$APP"* 2>/dev/null | head -3); do echo "== $F"; cat "$F"; done
+          exit 1
+
+  publish:
+    needs: [build, smoke-intel]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write       # gh release create/upload
+      id-token: write       # signs the provenance attestation (Sigstore)
+      attestations: write
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dmg
+          path: build
+
+      # Provenance: ties both DMG names to this repo, workflow and commit, so a checksum made by the same job is not the only proof.
+      # Check with `gh attestation verify <dmg> -R <owner>/<repo>` (docs/RELEASING.md).
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: build/*.dmg
+
+      # Created as a draft and published after the uploads, so "latest" never points at a release without its DMG.
+      # Re-runnable: a draft is reused and its assets replaced (--clobber). A published release is left alone: with
+      # immutable releases its assets are final.
+      - name: GitHub Release (notes from CHANGELOG.md)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          STATE=$(gh release view "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null || true)
+          [ "$STATE" != false ] || { echo "$GITHUB_REF_NAME is already published"; exit 0; }
+          [ -n "$STATE" ] || gh release create "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --draft --verify-tag --title "$APP $VERSION" --notes-file build/notes.md
+          gh release upload "$GITHUB_REF_NAME" "build/$APP-$VERSION.dmg" "build/$APP.dmg" build/SHA256SUMS -R "$GITHUB_REPOSITORY" --clobber
+          gh release edit "$GITHUB_REF_NAME" -R "$GITHUB_REPOSITORY" --draft=false

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Deliberately empty. Outboard is not sandboxed (a sandboxed app cannot move other apps' folders or point their settings at a
+	     drive) and needs no entitlement: no network, no helper, no root, no Apple events, no keychain. release.yml fails the build if one appears. -->
+</dict>
+</plist>

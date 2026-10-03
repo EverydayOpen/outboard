@@ -1,0 +1,233 @@
+{
+  "appVersion": "1.0.0",
+  "drives": [
+    {
+      "encrypted": "yes",
+      "firstUsed": "2027-01-15T08:00:00Z",
+      "format": "APFS",
+      "name": "Outboard",
+      "uuidPrefix": "3E1C0B7A"
+    }
+  ],
+  "footer": "This report lists what Outboard did and checked. It does not show that your data is undamaged or that a drive is reliable. Outboard has not been tried on every Mac or every drive.",
+  "generatedAt": "2027-01-18T08:00:00Z",
+  "isSample": false,
+  "macModel": "Mac14,12",
+  "macOSVersion": "26.0",
+  "problems": [
+    "2027-01-16 npm cache: Compared 900 files by size and SHA-256: 2 differences found. Nothing on your Mac was changed.",
+    "2027-01-16 npm cache: Stopped: a file on the drive differs from the original. Nothing on your Mac was changed."
+  ],
+  "provenance": "Generated on this Mac. Not uploaded.",
+  "relocations": [
+    {
+      "destination": "Outboard drive: Outboard/ollama-models/models",
+      "fileCount": 100,
+      "health": null,
+      "logicalBytes": 30000000000,
+      "methodLabel": "Community method",
+      "recipeID": "ollama-models",
+      "recipeName": "Ollama models",
+      "safetyCopy": "inTrash",
+      "source": "~/.ollama/models",
+      "state": "originalTrashed",
+      "timeline": [
+        {
+          "at": "2027-01-15T08:00:00Z",
+          "problem": false,
+          "step": "begin",
+          "text": "Planned moving Ollama models to Outboard drive (30 GB, 100 files)."
+        },
+        {
+          "at": "2027-01-15T08:03:00Z",
+          "problem": false,
+          "step": "preflight",
+          "text": "Checked Outboard drive (APFS, 480 GB free): 14 of 14 checks passed."
+        },
+        {
+          "at": "2027-01-15T08:04:00Z",
+          "problem": false,
+          "step": "copy",
+          "text": "Started copying Ollama models to Outboard drive (30 GB, 100 files)."
+        },
+        {
+          "at": "2027-01-15T08:05:00Z",
+          "problem": false,
+          "step": "copy",
+          "text": "Finished copying."
+        },
+        {
+          "at": "2027-01-15T08:07:00Z",
+          "problem": false,
+          "step": "verify",
+          "text": "Compared 100 files by size and SHA-256: 0 differences."
+        },
+        {
+          "at": "2027-01-15T08:09:00Z",
+          "problem": false,
+          "step": "publish",
+          "text": "Moved the checked copy to its final place on the drive."
+        },
+        {
+          "at": "2027-01-15T08:11:00Z",
+          "problem": false,
+          "step": "setAside",
+          "text": "Renamed models to models.before-move."
+        },
+        {
+          "at": "2027-01-15T08:13:00Z",
+          "problem": false,
+          "step": "redirect",
+          "text": "Put a link at models pointing to the drive."
+        },
+        {
+          "at": "2027-01-15T08:14:00Z",
+          "problem": false,
+          "step": "swapped",
+          "text": "The move is ready. Waiting for you to try Ollama and confirm."
+        },
+        {
+          "at": "2027-01-15T08:16:00Z",
+          "problem": false,
+          "step": "confirm",
+          "text": "You confirmed the move."
+        },
+        {
+          "at": "2027-01-15T08:18:00Z",
+          "problem": false,
+          "step": "trash",
+          "text": "You confirmed. Moved models.before-move to the Trash."
+        }
+      ],
+      "unresolved": [],
+      "verification": {
+        "algorithm": "SHA-256",
+        "bytesCompared": 30000000000,
+        "completedAt": "2027-01-15T08:00:00Z",
+        "destinationReadUncached": true,
+        "differences": 0,
+        "filesCompared": 100,
+        "hardLinkedCopiedSeparately": 0,
+        "manifestDigest": "d",
+        "symlinksCompared": 0
+      }
+    },
+    {
+      "destination": "Outboard drive: Outboard/npm-cache/npm",
+      "fileCount": 100,
+      "health": null,
+      "logicalBytes": 2000000000,
+      "methodLabel": "Community method",
+      "recipeID": "npm-cache",
+      "recipeName": "npm cache",
+      "safetyCopy": "none",
+      "source": "~/.npm",
+      "state": "aborted",
+      "timeline": [
+        {
+          "at": "2027-01-16T11:46:40Z",
+          "problem": false,
+          "step": "begin",
+          "text": "Planned moving npm cache to Outboard drive (2 GB, 100 files)."
+        },
+        {
+          "at": "2027-01-16T11:48:20Z",
+          "problem": true,
+          "step": "verify",
+          "text": "Compared 900 files by size and SHA-256: 2 differences found. Nothing on your Mac was changed."
+        },
+        {
+          "at": "2027-01-16T11:50:00Z",
+          "problem": true,
+          "step": "abort",
+          "text": "Stopped: a file on the drive differs from the original. Nothing on your Mac was changed."
+        }
+      ],
+      "unresolved": [],
+      "verification": null
+    },
+    {
+      "destination": "Outboard drive: Outboard/xcode-deriveddata/DerivedData",
+      "fileCount": 100,
+      "health": null,
+      "logicalBytes": 41000000000,
+      "methodLabel": "Official setting",
+      "recipeID": "xcode-deriveddata",
+      "recipeName": "Xcode build data",
+      "safetyCopy": "kept",
+      "source": "~/Library/Developer/Xcode/DerivedData",
+      "state": "swapped",
+      "timeline": [
+        {
+          "at": "2027-01-17T15:33:20Z",
+          "problem": false,
+          "step": "begin",
+          "text": "Planned moving Xcode build data to Outboard drive (41 GB, 100 files)."
+        },
+        {
+          "at": "2027-01-17T15:35:20Z",
+          "problem": false,
+          "step": "preflight",
+          "text": "Checked Outboard drive (APFS, 480 GB free): 14 of 14 checks passed."
+        },
+        {
+          "at": "2027-01-17T15:36:20Z",
+          "problem": false,
+          "step": "copy",
+          "text": "Started copying Xcode build data to Outboard drive (41 GB, 100 files)."
+        },
+        {
+          "at": "2027-01-17T15:37:20Z",
+          "problem": false,
+          "step": "copy",
+          "text": "Finished copying."
+        },
+        {
+          "at": "2027-01-17T15:39:20Z",
+          "problem": false,
+          "step": "verify",
+          "text": "Compared 100 files by size and SHA-256: 0 differences."
+        },
+        {
+          "at": "2027-01-17T15:41:20Z",
+          "problem": false,
+          "step": "publish",
+          "text": "Moved the checked copy to its final place on the drive."
+        },
+        {
+          "at": "2027-01-17T15:43:20Z",
+          "problem": false,
+          "step": "setAside",
+          "text": "Renamed DerivedData to DerivedData.before-move."
+        },
+        {
+          "at": "2027-01-17T15:45:20Z",
+          "problem": false,
+          "step": "redirect",
+          "text": "Put a link at DerivedData pointing to the drive."
+        },
+        {
+          "at": "2027-01-17T15:46:20Z",
+          "problem": false,
+          "step": "swapped",
+          "text": "The move is ready. Waiting for you to try Xcode and confirm."
+        }
+      ],
+      "unresolved": [
+        "Waiting for you to try the app and confirm."
+      ],
+      "verification": {
+        "algorithm": "SHA-256",
+        "bytesCompared": 41000000000,
+        "completedAt": "2027-01-15T08:00:00Z",
+        "destinationReadUncached": true,
+        "differences": 0,
+        "filesCompared": 100,
+        "hardLinkedCopiedSeparately": 0,
+        "manifestDigest": "d",
+        "symlinksCompared": 0
+      }
+    }
+  ],
+  "schema": 1
+}

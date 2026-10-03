@@ -1,0 +1,193 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 4 * * 1"   # Mondays: swift test (incl. the real-volume tests) on the current macos-26 image
+
+permissions:
+  contents: read
+
+env:
+  XCODEGEN: "2.46.0"   # checksum-pinned, same pin as release.yml, beta.yml, screens.yml, fixtures.yml and codeql.yml: bump all together
+  XCODEGEN_SHA256: 4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806
+
+jobs:
+  # OutboardCore is Foundation-only; on Linux Package.swift defines just the Core targets.
+  core-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: swift:6.2@sha256:9bea530093ffff8cf6c259991715ee843fe4d0f932e612f7f4b79cca6e00db87   # the compiler BUILD_PLAN targets (Xcode 26 ships Swift 6.2+); digest-pinned, same pin as tools/test_core_docker.sh: bump both together
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # "Must pass with no warnings" (AGENTS.md): a compiler warning anywhere in the log fails the job.
+      - name: Build and test OutboardCore
+        shell: bash
+        run: |
+          set -o pipefail
+          { swift build --target OutboardCore && swift test --filter OutboardCoreTests; } 2>&1 | tee swift.log
+          ! grep -E 'warning:' swift.log
+
+  # Core, Mac and real-volume tests (the Mac tests create their own APFS disk images, copy to them, pull them away and check recovery),
+  # then the app twice: Release (universal) AND Debug. The Release build compiles no `#if DEBUG` code, and the demo code
+  # (App/Demo.swift, the screens workflow's launch arguments) and the crash-injection hooks live there, so Debug must build too
+  # (BUILD_PLAN section 3.2).
+  macos:
+    runs-on: macos-26
+    timeout-minutes: 75
+    env:
+      OUTBOARD_DISK_TESTS: "1"   # without it every real-volume, unplug and crash-recovery test skips itself (Tests/OutboardMacTests/DiskImageLab.swift)
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app && xcodebuild -version
+
+      # VERIFY (first run): that SwiftPM builds the OutboardFixture and OutboardCrashHelper executables beside the test bundle, as the
+      # Mac tests expect (BUILD_PLAN section 12, architect additions).
+      - name: swift test (real-volume tests on)
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee swift.log
+
+      # A job that skips the real-volume tests is not a green job: the env var above must have reached them, none of the invariant
+      # tests may be skipped (bar the Trash and E9 ones), and the must-pass list must be in the log as passed.
+      - name: Fail if the real-volume tests were skipped
+        run: bash tools/check_test_log.sh swift.log
+
+      # A test that died before its own cleanup must not leave an image attached for the next job on this runner.
+      - name: Detach any test image still mounted
+        if: always()
+        run: bash tools/disk_image.sh cleanup
+
+      - name: Generate project (XcodeGen, checksum-pinned)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          test -d "$RUNNER_TEMP/xcodegen/share/xcodegen/SettingPresets"   # without them xcodegen only prints a warning
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+
+      - name: Build app (Release, universal, unsigned)
+        run: |
+          xcodebuild -project Outboard.xcodeproj -scheme Outboard -configuration Release \
+            -destination 'generic/platform=macOS' ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+
+      # DEBUG is set explicitly so a preset change cannot turn this into a second Release build.
+      - name: Build app (Debug, with the demo code)
+        run: |
+          xcodebuild -project Outboard.xcodeproj -scheme Outboard -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG CODE_SIGNING_ALLOWED=NO build
+
+  # The disk-image mechanics the real-volume tests rely on (create an APFS image, attach it, read what diskutil says, detach it), as
+  # their own job on both runner architectures. A runner image that cannot do this shows up here as one red job with the command output
+  # attached, instead of as twenty skipped tests. Failures are data (BUILD_PLAN section 6.4, VERIFY item 17), so this job never blocks.
+  volumes:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-26, macos-15-intel]
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: true
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create, attach, inspect and detach an APFS image
+        run: bash tools/disk_image.sh smoke out
+      # Whatever happened above, nothing stays attached.
+      - name: Detach any test image still mounted
+        if: always()
+        run: bash tools/disk_image.sh cleanup
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: volumes-${{ matrix.runner }}
+          path: out/
+          if-no-files-found: ignore
+
+  # Non-blocking early warning against the next SDK. Selects an Xcode 27 if the macos-26 image has one, else skips.
+  xcode-27:
+    runs-on: macos-26
+    continue-on-error: true
+    timeout-minutes: 75
+    env:
+      OUTBOARD_DISK_TESTS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Select Xcode 27 (skips the rest when the image has none)
+        id: xc
+        run: |
+          x=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -1 || true)
+          if [ -z "$x" ]; then echo "No Xcode 27 on this image; skipping."; exit 0; fi
+          sudo xcode-select -s "$x"; echo "have=1" >> "$GITHUB_OUTPUT"; xcodebuild -version
+      - if: steps.xc.outputs.have
+        name: swift test (real-volume tests on)
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee swift.log
+      - if: steps.xc.outputs.have
+        name: Fail if the real-volume tests were skipped
+        run: bash tools/check_test_log.sh swift.log
+      - name: Detach any test image still mounted
+        if: always()
+        run: bash tools/disk_image.sh cleanup
+      - if: steps.xc.outputs.have
+        name: Generate project (XcodeGen, checksum-pinned)
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN/xcodegen.zip"
+          echo "$XCODEGEN_SHA256  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          test -d "$RUNNER_TEMP/xcodegen/share/xcodegen/SettingPresets"
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+      - if: steps.xc.outputs.have
+        name: Build app (Release)
+        run: |
+          xcodebuild -project Outboard.xcodeproj -scheme Outboard -configuration Release \
+            -destination 'generic/platform=macOS' ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO build
+      - if: steps.xc.outputs.have
+        name: Build app (Debug, with the demo code)
+        run: |
+          xcodebuild -project Outboard.xcodeproj -scheme Outboard -configuration Debug \
+            -destination 'platform=macOS,arch=arm64' SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG CODE_SIGNING_ALLOWED=NO build
+
+  # The safety rules (docs/BUILD_PLAN.md section 3), the banned claim phrases, the recipe catalogue and repo hygiene. GNU grep on
+  # Linux: the regexes use \b. The full run includes the pinned-line mutation self-tests (fast here, minutes on Windows).
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0   # repo_checks.sh reads every commit's author, committer and message
+          persist-credentials: false
+
+      # One site per verb (moveItem, copyItem, createSymbolicLink, trashItem, the one defaults write), no delete or overwrite primitive,
+      # no shell or child process beyond the closed command set, no file contents read except to hash, no network, no print, iCloud
+      # names in one file, banned phrases, and the pinned line orders of the files that move things.
+      - run: bash tools/safety_greps.sh
+
+      # Home paths, empty Button actions, the Edit menu, commit identity and credit lines, key material.
+      - run: bash tools/repo_checks.sh
+
+      # The catalogue as exported by the Core tests: source paths, the defaults allowlist, consent text, the VERIFY_LOG rule.
+      - run: python3 tools/check_recipes.py
+
+      # The checker the macOS jobs run on their swift test logs, tested on synthetic logs.
+      - run: bash tools/check_test_log.sh --self-test
+
+      - run: python3 tools/changelog.py --self-test
+      - run: python3 tools/build_site.py --check
+      - run: bash tools/doctor.sh --ci

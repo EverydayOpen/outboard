@@ -1,0 +1,64 @@
+<!--meta {"title": "How an Outboard move works, and what it cannot do", "description": "The steps of a move (checks, copy, compare, switch, confirm or roll back), the rules every step follows, what Outboard reads and never does, and the limits that apply."}-->
+<article class="read prose">
+  <p class="eyebrow"><b>02</b> · How it works</p>
+  <h1>How a move works</h1>
+  <p class="lede">{{statusNote}}</p>
+
+  <ol class="steps">
+    <li><b>Choose a drive</b><span>Outboard looks at the drive without changing it and tells you what it found. It refuses network volumes, FAT and exFAT, a Time Machine destination and anything it cannot identify, and it prefers one APFS volume that you made for it. It writes one small marker file on the drive and nothing else until you start a move.</span></li>
+    <li><b>Checks before anything changes</b><span>The app that owns the folder must not be running (Outboard asks you to quit it and never quits anything), the drive needs room for the copy plus a margin, and nothing involved may sit in iCloud. A check that cannot be answered counts as a failed check.</span></li>
+    <li><b>{{eduS1}}</b><span>The folder is copied to a staging folder on the drive, then every file is compared with the original by size and SHA-256. One difference stops the move; your Mac has not changed at that point.</span></li>
+    <li><b>{{eduS2}}</b><span>The original is renamed to <code>&lt;name&gt;.before-move</code>. Then either the app's own setting is pointed at the copy, or a link is put where the folder was.</span></li>
+    <li><b>Confirm or roll back</b><span>{{eduS3}} Try the app. If it works, confirm: the original goes to the Trash and the space returns when you empty it. Until then you can roll back and the original is put back as it was.</span></li>
+  </ol>
+  <p class="receipt">Re-checked right before the switch · the app not running · copied, then compared file by file · renamed, never deleted · every step in the log · roll back until you confirm</p>
+
+  <h2 id="rules">The rules every step follows</h2>
+  <ol class="rules">
+    <li><h3>Nothing is deleted</h3><p>The original is renamed. Only after you confirm does it go to the Trash, and the Trash is yours to empty.</p><code>trashItem</code></li>
+    <li><h3>The log comes first</h3><p>The line for a step is written and flushed to disk before the step runs. If the log cannot be written, nothing moves.</p><code>fsync</code></li>
+    <li><h3>Unknown means no</h3><p>A check that cannot be answered refuses the move or asks you to tick a box. It is never read as "yes".</p><code>unknown = no</code></li>
+    <li><h3>The guard reads facts, not memory</h3><p>Each decision starts from what the file system says about the path now, so a crash leaves nothing to repair, only to look at.</p><code>lstat</code></li>
+    <li><h3>Every file is compared</h3><p>The copy is read back and compared with the original by size and SHA-256; one mismatch aborts, and the Mac is unchanged.</p><code>SHA-256</code></li>
+    <li><h3>A drive is recognised by identity</h3><p>Volume UUID, a sentinel file and a stamp on the drive's root, never its name or path. A second drive with the same name is not the drive you moved to.</p><code>UUID</code></li>
+    <li><h3>The note is read-only</h3><p>The note put where a folder was is a small file that cannot be written to without a permission change.</p><code>0444</code></li>
+    <li><h3>Three system commands, no shell</h3><p>Two only read (the disk's facts, the Time Machine destinations). One reads and writes the catalogue's Xcode settings and nothing else. No helper, no administrator password.</p><code>3 commands</code></li>
+  </ol>
+
+  <h2 id="reads">What it reads. What it never does.</h2>
+  <div class="ledger">
+    <div>
+      <p class="label">Reads</p>
+      <ul class="rules plain">
+        <li><h3>Folder names and sizes</h3><p>In your Library and home dot-folders, for the folders in the catalogue.</p></li>
+        <li><h3>Mounted drives</h3><p>What macOS says about them, through two read-only system commands.</p></li>
+        <li><h3>File contents, to hash them</h3><p>Only during a copy, to compare the copy with the original, and for Outboard's own log and marker files.</p></li>
+      </ul>
+    </div>
+    <div>
+      <p class="label">Never</p>
+      <ul class="rules plain">
+        <li><h3>Connect to a network</h3><p>No update check, no telemetry, no account.</p></li>
+        <li><h3>Delete anything</h3><p>The Trash only, after you confirm.</p></li>
+        <li><h3>Format, mount or eject a drive</h3><p>Disk Utility does that. Outboard shows the steps and never sees a passphrase.</p></li>
+        <li><h3>Quit or signal an app</h3><p>It asks you to quit. No <code>launchctl</code>, no helper, no root.</p></li>
+        <li><h3>Touch iCloud</h3><p>Not the source, the destination, staging or the log.</p></li>
+        <li><h3>Edit your shell files</h3><p>An environment line is shown as text to copy.</p></li>
+      </ul>
+    </div>
+  </div>
+  <p>The folders it refuses, as the app lists them:</p>
+  <pre><code>{{neverMono}}</code></pre>
+
+  <h2 id="unplug">If you unplug the drive</h2>
+  <p>{{eduLimit}} While Outboard is running, the Drive Guard {{guardVerb}} that the drive is gone, waits {{parkSeconds}} seconds in case it comes straight back, puts a note where the folder was (or puts the app's setting back) and says so in the window and the menu bar. When the drive returns, it puts things back and checks them: a quick check and a sample of {{sampleFiles}} files, or every file that has not changed after a removal without ejecting.</p>
+  <p>Things this does not cover: Outboard has to be running (it can start at login, and it asks first); what each app does when it finds the note instead of its folder has not been tried on a real Mac; and a drive removed during a copy leaves the original where it was and a half-copied staging folder on the drive, which the next launch reports. <a href="/guides/unplug-external-drive-that-holds-app-data-mac/">The long version, with sources</a>.</p>
+
+  <h2 id="limits">Limits, said plainly</h2>
+  <ul>
+    <li>It makes no claim about speed. A drive on a cable is not the Mac's own storage.</li>
+    <li>It cannot configure a new install for you: macOS gives no hook for that. It measures, moves what is on its list, and guides the rest.</li>
+    <li>{{eduFooter}}</li>
+    <li>Not yet tried on a real Mac.</li>
+  </ul>
+</article>

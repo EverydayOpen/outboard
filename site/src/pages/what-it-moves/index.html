@@ -1,0 +1,22 @@
+<!--meta {"title": "What Outboard moves, guides and refuses", "description": "The catalogue: the folders Outboard can move itself, the ones it only guides you through, and the ones it will not touch, each with where it lives, what happens when the drive is away, and the reason."}-->
+<article class="read prose">
+  <p class="eyebrow"><b>03</b> · Catalogue</p>
+  <h1>What it moves, guides and refuses</h1>
+  <p class="lede">Outboard knows {{knownCount}} apps. The catalogue is plain data in the source, one entry per folder, checked by tests and by a validator on every change. Anyone can propose an entry with a pull request; each one needs sources.</p>
+  <p class="tried">Not yet tried on a real Mac. An entry is marked as tried only after a named tester has run it and the public <a href="{{repoURL}}/blob/main/docs/VERIFY_LOG.md">verify log</a> says so. The moves are rolled out in order: Xcode build data, then the caches that use a link, then iPhone backups, then Xcode archives.</p>
+
+  <h2 id="moves">Moves Outboard does itself ({{autoCount}})</h2>
+  <p>Copied to your drive, compared file by file, switched over, and kept as an original until you confirm. Each one is hidden in the app until you turn on "Show moves not yet tried on a real Mac", because none has been run on a real Mac yet. "Official setting" means the app has a setting for it that Outboard points at the copy; "Community method" means a link, which is not a setting the app documents.</p>
+  <ul class="rows card reveal">{{autoRows}}</ul>
+
+  <h2 id="guided">Guided, by the app itself ({{guidedCount}})</h2>
+  <p>These apps have their own setting for a second location. Outboard moves nothing: it shows the steps, with a button that opens the app, and measures the folder so you know what to expect.</p>
+  <ul class="rows card reveal">{{guidedRows}}</ul>
+
+  <h2 id="refused">Not offered ({{neverCount}})</h2>
+  <p>A visible card with the reason, so you are not left wondering why a big folder is missing from the plan.</p>
+  <ul class="rows card reveal">{{neverRows}}</ul>
+
+  <p class="actions"><a class="button" href="{{repoURL}}/tree/main/Sources/OutboardCore/Recipes">Propose a recipe</a> <a class="button secondary" href="{{testerURL}}">Report a move you tried</a></p>
+  <p class="fine">Outboard knows {{knownCount}} apps. Outboard is not affiliated with or endorsed by any app it lists. Their names appear only to say what Outboard knows about; no vendor logos are used. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+</article>
