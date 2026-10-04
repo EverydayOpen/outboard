@@ -107,7 +107,7 @@ enum DefaultsRedirect {
     static func isRedirected(_ recipe: Recipe, home: String, read lookup: (DefaultsKeySpec) -> String??) -> Bool {
         guard case .defaults(_, let keys, _) = recipe.method, let pathKey = keys.first(where: { $0.value == .destinationPath }),
               case .some(.some(let path)) = lookup(pathKey), !path.isEmpty,
-              PathText.tilde(path, home: home) != PathText.tilde(PathText.expandTilde(recipe.source, home: home), home: home) else { return false }
+              PathText.tilde(path, home: home) != recipe.source.map({ PathText.tilde(PathText.expandTilde($0, home: home), home: home) }) else { return false }
         for mode in keys where mode.value != .destinationPath {
             let neutral: String?
             switch mode.neutral {
