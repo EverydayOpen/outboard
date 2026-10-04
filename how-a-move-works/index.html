@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>How an Outboard move works, and what it cannot do</title>
+<meta name="description" content="The steps of a move (checks, copy, compare, switch, confirm or roll back), the rules every step follows, what Outboard reads and never does, and the limits that apply.">
+<link rel="canonical" href="https://everydayopen.github.io/outboard/how-a-move-works/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1217" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Outboard">
+<meta property="og:title" content="How an Outboard move works, and what it cannot do">
+<meta property="og:description" content="The steps of a move (checks, copy, compare, switch, confirm or roll back), the rules every step follows, what Outboard reads and never does, and the limits that apply.">
+<meta property="og:url" content="https://everydayopen.github.io/outboard/how-a-move-works/">
+<meta property="og:image" content="https://everydayopen.github.io/outboard/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sample data: the Outboard Storage Plan card. Your Mac could free up to 87 GB: Xcode build data 41 GB, Ollama models 30 GB, iPhone backups 16 GB. Measured on this Mac. Nothing was moved.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/outboard/favicon.png">
+<link rel="apple-touch-icon" href="/outboard/apple-touch-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Outboard changelog" href="/outboard/feed.xml">
+<link rel="stylesheet" href="/outboard/styles.css">
+<script src="/outboard/motion.js" defer></script>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M4.5 19.5h15"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2.5" y="8" width="9.5" height="9.5" rx="2.6"/><rect x="16" y="10.5" width="6" height="4.5" rx="2.25"/><path d="M12 12.75h4"/></g><circle cx="4.6" cy="4.4" r="1.7" fill="currentColor"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></g></symbol>
+  <symbol id="k-build" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5l8-8"/><path d="M10.5 5.5l3.5-2 6 6-2 3.5-3-.5-2.5 2.5-4.5-4.5 2.5-2.5z"/></g></symbol>
+  <symbol id="k-model" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></g></symbol>
+  <symbol id="k-backup" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M10.5 18h3"/></g></symbol>
+  <symbol id="k-cache" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.5 7.5h15M4.5 12h15M4.5 16.5h15"/></symbol>
+  <symbol id="k-archive" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8.5v10a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-10M3 4.5h18v4H3zM10 12.5h4"/></g></symbol>
+  <symbol id="k-photos" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l4.5-4 3 2.5 3-3.5 5.5 5"/></g></symbol>
+  <symbol id="k-music" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V6l10-2v11"/><circle cx="6.5" cy="17" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></g></symbol>
+  <symbol id="k-film" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10h17v8.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M3.5 10l1.2-4.8 16 1.3-.6 3.5M9 5.7l-1 4.3M14.5 6.2L13.5 10"/></g></symbol>
+  <symbol id="k-game" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 8h9a4.5 4.5 0 0 1 4.4 5.5l-.4 2a2.7 2.7 0 0 1-4.7 1l-1.3-1.5H9.5l-1.3 1.5a2.7 2.7 0 0 1-4.7-1l-.4-2A4.5 4.5 0 0 1 7.5 8z"/><path d="M8 10.8v3M6.5 12.3h3M16 11.6h.01M18 13.2h.01"/></g></symbol>
+  <symbol id="k-sdk" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5"/></symbol>
+  <symbol id="k-never" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.5V6.5a1.5 1.5 0 0 1 3 0v4.5m0 0V5a1.5 1.5 0 0 1 3 0v6m0 0V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.5a5 5 0 0 1-4-2L4.7 13.2a1.4 1.4 0 0 1 2.2-1.7L8 12.5"/></g></symbol>
+</svg>
+<header class="site-header">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="/outboard/"><img src="/outboard/favicon.png" width="28" height="28" alt=""><span>Outboard</span></a>
+    <ul class="nav-links">
+      <li><a href="/outboard/how-a-move-works/">How it works</a></li>
+      <li><a href="/outboard/what-it-moves/">What it moves</a></li>
+      <li><a href="/outboard/guides/">Guides</a></li>
+    </ul>
+    <a class="button secondary small" href="https://github.com/EverydayOpen/outboard" rel="noopener">Source</a>
+    <a class="button small" href="/outboard/download/">Download</a>
+  </nav>
+</header>
+<main id="main" tabindex="-1">
+<article class="read prose">
+  <p class="eyebrow"><b>02</b> · How it works</p>
+  <h1>How a move works</h1>
+  <p class="lede">Nothing has run on a real Mac yet, so read everything described here as the design, not as proof that it works. The changelog will say what testers have tried.</p>
+
+  <ol class="steps">
+    <li><b>Choose a drive</b><span>Outboard looks at the drive without changing it and tells you what it found. It refuses network volumes, FAT and exFAT, a Time Machine destination and anything it cannot identify, and it prefers one APFS volume that you made for it. It writes one small marker file on the drive and nothing else until you start a move.</span></li>
+    <li><b>Checks before anything changes</b><span>The app that owns the folder must not be running (Outboard asks you to quit it and never quits anything), the drive needs room for the copy plus a margin, and nothing involved may sit in iCloud. A check that cannot be answered counts as a failed check.</span></li>
+    <li><b>It copies the folder to your drive, then checks every file against the original.</b><span>The folder is copied to a staging folder on the drive, then every file is compared with the original by size and SHA-256. One difference stops the move; your Mac has not changed at that point.</span></li>
+    <li><b>Only if every file matches does it switch the app over.</b><span>The original is renamed to <code>&lt;name&gt;.before-move</code>. Then either the app's own setting is pointed at the copy, or a link is put where the folder was.</span></li>
+    <li><b>Confirm or roll back</b><span>Your original stays on your Mac, renamed, until you&#x27;ve tried the app and said it works. Try the app. If it works, confirm: the original goes to the Trash and the space returns when you empty it. Until then you can roll back and the original is put back as it was.</span></li>
+  </ol>
+  <p class="receipt">Re-checked right before the switch · the app not running · copied, then compared file by file · renamed, never deleted · every step in the log · roll back until you confirm</p>
+
+  <h2 id="rules">The rules every step follows</h2>
+  <ol class="rules">
+    <li><h3>Nothing is deleted</h3><p>The original is renamed. Only after you confirm does it go to the Trash, and the Trash is yours to empty.</p><code>trashItem</code></li>
+    <li><h3>The log comes first</h3><p>The line for a step is written and flushed to disk before the step runs. If the log cannot be written, nothing moves.</p><code>fsync</code></li>
+    <li><h3>Unknown means no</h3><p>A check that cannot be answered refuses the move or asks you to tick a box. It is never read as "yes".</p><code>unknown = no</code></li>
+    <li><h3>The guard reads facts, not memory</h3><p>Each decision starts from what the file system says about the path now, so a crash leaves nothing to repair, only to look at.</p><code>lstat</code></li>
+    <li><h3>Every file is compared</h3><p>The copy is read back and compared with the original by size and SHA-256; one mismatch aborts, and the Mac is unchanged.</p><code>SHA-256</code></li>
+    <li><h3>A drive is recognised by identity</h3><p>Volume UUID, a sentinel file and a stamp on the drive's root, never its name or path. A second drive with the same name is not the drive you moved to.</p><code>UUID</code></li>
+    <li><h3>The note is read-only</h3><p>The note put where a folder was is a small file that cannot be written to without a permission change.</p><code>0444</code></li>
+    <li><h3>Three system commands, no shell</h3><p>Two only read (the disk's facts, the Time Machine destinations). One reads and writes the catalogue's Xcode settings and nothing else. No helper, no administrator password.</p><code>3 commands</code></li>
+  </ol>
+
+  <h2 id="reads">What it reads. What it never does.</h2>
+  <div class="ledger">
+    <div>
+      <p class="label">Reads</p>
+      <ul class="rules plain">
+        <li><h3>Folder names and sizes</h3><p>In your Library and home dot-folders, for the folders in the catalogue.</p></li>
+        <li><h3>Mounted drives</h3><p>What macOS says about them, through two read-only system commands.</p></li>
+        <li><h3>File contents, to hash them</h3><p>Only during a copy, to compare the copy with the original, and for Outboard's own log and marker files.</p></li>
+      </ul>
+    </div>
+    <div>
+      <p class="label">Never</p>
+      <ul class="rules plain">
+        <li><h3>Connect to a network</h3><p>No update check, no telemetry, no account.</p></li>
+        <li><h3>Delete anything</h3><p>The Trash only, after you confirm.</p></li>
+        <li><h3>Format, mount or eject a drive</h3><p>Disk Utility does that. Outboard shows the steps and never sees a passphrase.</p></li>
+        <li><h3>Quit or signal an app</h3><p>It asks you to quit. No <code>launchctl</code>, no helper, no root.</p></li>
+        <li><h3>Touch iCloud</h3><p>Not the source, the destination, staging or the log.</p></li>
+        <li><h3>Edit your shell files</h3><p>An environment line is shown as text to copy.</p></li>
+      </ul>
+    </div>
+  </div>
+  <p>The folders it refuses, as the app lists them:</p>
+  <pre><code>Sandboxed app data                  sandbox
+Mail, Safari, Messages and Notes    TCC
+Homebrew                            /opt/homebrew
+The Caches folder and your home folder~/Library/Caches
+Anything in iCloud Drive            sync
+Apps themselves                     .app
+Xcode simulator runtimes            disk images
+Docker Desktop and OrbStack         disk image
+pnpm and uv stores                  links</code></pre>
+
+  <h2 id="unplug">If you unplug the drive</h2>
+  <p>Outboard can&#x27;t stop you unplugging a drive or make that harmless. While Outboard is running, the Drive Guard is designed to announce that the drive is gone, waits 5 seconds in case it comes straight back, puts a note where the folder was (or puts the app's setting back) and says so in the window and the menu bar. When the drive returns, it puts things back and checks them: a quick check and a sample of 200 files, or every file that has not changed after a removal without ejecting.</p>
+  <p>Things this does not cover: Outboard has to be running (it can start at login, and it asks first); what each app does when it finds the note instead of its folder has not been tried on a real Mac; and a drive removed during a copy leaves the original where it was and a half-copied staging folder on the drive, which the next launch reports. <a href="/outboard/guides/unplug-external-drive-that-holds-app-data-mac/">The long version, with sources</a>.</p>
+
+  <h2 id="limits">Limits, said plainly</h2>
+  <ul>
+    <li>It makes no claim about speed. A drive on a cable is not the Mac's own storage.</li>
+    <li>It cannot configure a new install for you: macOS gives no hook for that. It measures, moves what is on its list, and guides the rest.</li>
+    <li>This report lists what Outboard did and checked. It does not show that your data is undamaged or that a drive is reliable. Outboard has not been tried on every Mac or every drive.</li>
+    <li>Not yet tried on a real Mac.</li>
+  </ul>
+</article>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/outboard/download/">Download</a></li>
+          <li><a href="/outboard/changelog/">Changelog</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard" rel="noopener">Source code</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>How it works</h2>
+        <ul>
+          <li><a href="/outboard/how-a-move-works/">How a move works</a></li>
+          <li><a href="/outboard/what-it-moves/">What it moves, guides, refuses</a></li>
+          <li><a href="/outboard/#guard">The Drive Guard</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Guides</h2>
+        <ul>
+          <li><a href="/outboard/guides/move-xcode-deriveddata-to-external-drive/">Xcode build data</a></li>
+          <li><a href="/outboard/guides/run-ollama-models-from-external-ssd-mac/">Ollama models</a></li>
+          <li><a href="/outboard/guides/unplug-external-drive-that-holds-app-data-mac/">If you unplug it</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Help</h2>
+        <ul>
+          <li><a href="https://github.com/EverydayOpen/outboard/issues/new?template=move-went-wrong.yml" rel="noopener">A move went wrong</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard/issues/new?template=recipe-result.yml" rel="noopener">Report a move you tried</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard/security/policy" rel="noopener">Security policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="official"><svg aria-hidden="true"><use href="#i-check"/></svg><span>The only official site is https://everydayopen.github.io/outboard. Downloads come only from github.com/EverydayOpen/outboard/releases.</span></p>
+    <p class="fine"><a class="tag plain" href="/outboard/changelog/">1.0 coming soon</a>© 2026 EverydayOpen. Outboard is free and open source under the MIT License.</p>
+    <p class="fine">Outboard is not affiliated with or endorsed by any app it lists. Their names appear only to say what Outboard knows about; no vendor logos are used. Apple, Mac, macOS, Xcode and Time Machine are trademarks of Apple Inc. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+  </div>
+</footer>
+</body>
+</html>

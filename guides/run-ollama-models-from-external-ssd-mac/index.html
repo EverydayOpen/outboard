@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Can I run Ollama models from an external SSD?</title>
+<meta name="description" content="Yes, in three ways. What each one changes, why you should move ~/.ollama/models and never ~/.ollama itself, what the Ollama app does when the drive is missing, and where Hugging Face, llama.cpp and LM Studio differ. Sources included.">
+<link rel="canonical" href="https://everydayopen.github.io/outboard/guides/run-ollama-models-from-external-ssd-mac/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1217" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Outboard">
+<meta property="og:title" content="Can I run Ollama models from an external SSD?">
+<meta property="og:description" content="Yes, in three ways. What each one changes, why you should move ~/.ollama/models and never ~/.ollama itself, what the Ollama app does when the drive is missing, and where Hugging Face, llama.cpp and LM Studio differ. Sources included.">
+<meta property="og:url" content="https://everydayopen.github.io/outboard/guides/run-ollama-models-from-external-ssd-mac/">
+<meta property="og:image" content="https://everydayopen.github.io/outboard/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sample data: the Outboard Storage Plan card. Your Mac could free up to 87 GB: Xcode build data 41 GB, Ollama models 30 GB, iPhone backups 16 GB. Measured on this Mac. Nothing was moved.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/outboard/favicon.png">
+<link rel="apple-touch-icon" href="/outboard/apple-touch-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Outboard changelog" href="/outboard/feed.xml">
+<link rel="stylesheet" href="/outboard/styles.css">
+<script src="/outboard/motion.js" defer></script>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M4.5 19.5h15"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2.5" y="8" width="9.5" height="9.5" rx="2.6"/><rect x="16" y="10.5" width="6" height="4.5" rx="2.25"/><path d="M12 12.75h4"/></g><circle cx="4.6" cy="4.4" r="1.7" fill="currentColor"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></g></symbol>
+  <symbol id="k-build" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5l8-8"/><path d="M10.5 5.5l3.5-2 6 6-2 3.5-3-.5-2.5 2.5-4.5-4.5 2.5-2.5z"/></g></symbol>
+  <symbol id="k-model" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></g></symbol>
+  <symbol id="k-backup" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M10.5 18h3"/></g></symbol>
+  <symbol id="k-cache" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.5 7.5h15M4.5 12h15M4.5 16.5h15"/></symbol>
+  <symbol id="k-archive" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8.5v10a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-10M3 4.5h18v4H3zM10 12.5h4"/></g></symbol>
+  <symbol id="k-photos" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l4.5-4 3 2.5 3-3.5 5.5 5"/></g></symbol>
+  <symbol id="k-music" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V6l10-2v11"/><circle cx="6.5" cy="17" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></g></symbol>
+  <symbol id="k-film" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10h17v8.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M3.5 10l1.2-4.8 16 1.3-.6 3.5M9 5.7l-1 4.3M14.5 6.2L13.5 10"/></g></symbol>
+  <symbol id="k-game" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 8h9a4.5 4.5 0 0 1 4.4 5.5l-.4 2a2.7 2.7 0 0 1-4.7 1l-1.3-1.5H9.5l-1.3 1.5a2.7 2.7 0 0 1-4.7-1l-.4-2A4.5 4.5 0 0 1 7.5 8z"/><path d="M8 10.8v3M6.5 12.3h3M16 11.6h.01M18 13.2h.01"/></g></symbol>
+  <symbol id="k-sdk" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5"/></symbol>
+  <symbol id="k-never" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.5V6.5a1.5 1.5 0 0 1 3 0v4.5m0 0V5a1.5 1.5 0 0 1 3 0v6m0 0V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.5a5 5 0 0 1-4-2L4.7 13.2a1.4 1.4 0 0 1 2.2-1.7L8 12.5"/></g></symbol>
+</svg>
+<header class="site-header">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="/outboard/"><img src="/outboard/favicon.png" width="28" height="28" alt=""><span>Outboard</span></a>
+    <ul class="nav-links">
+      <li><a href="/outboard/how-a-move-works/">How it works</a></li>
+      <li><a href="/outboard/what-it-moves/">What it moves</a></li>
+      <li><a href="/outboard/guides/">Guides</a></li>
+    </ul>
+    <a class="button secondary small" href="https://github.com/EverydayOpen/outboard" rel="noopener">Source</a>
+    <a class="button small" href="/outboard/download/">Download</a>
+  </nav>
+</header>
+<main id="main" tabindex="-1">
+<article class="read prose guide">
+  <p class="eyebrow"><b>G2</b> · Guide · Checked 3 October 2026 · macOS</p>
+  <h1>Can I run Ollama models from an external SSD?</h1>
+
+  <div class="summary">
+    <h2>The short answer</h2>
+    <ol>
+      <li>Yes, three ways: the Ollama app's own Model location setting, the <code>OLLAMA_MODELS</code> environment variable, or a link at <code>~/.ollama/models</code>.</li>
+      <li>The catch is the unplug. In the app's source (version 0.35.1, published 29 September 2026), a models path that cannot be read is logged and replaced by the default folder, so the models look gone and the next pull fills the Mac's disk.</li>
+      <li>Move <code>~/.ollama/models</code>, never <code>~/.ollama</code> itself: the folder above it holds keys, history and logs.</li>
+    </ol>
+  </div>
+
+  <h2 id="where">Where the models live</h2>
+  <p>By default in <code>~/.ollama/models</code>: blobs (the model files) and manifests, as Ollama's FAQ describes. Sizes run from a few GB to hundreds, depending on what you pulled. The folder one level up, <code>~/.ollama</code>, also holds your keys, history and logs, so it is not the folder to move.</p>
+
+  <h2 id="setting">The app's own setting</h2>
+  <p>The Ollama desktop app has a field labelled "Model location" in its Settings, described as the location where models are stored. Point it at a folder on the drive and copy your existing models there yourself. The value is kept in the app's own database, so Outboard never writes it: for this route Outboard would only be a guided card.</p>
+
+  <h2 id="env">The environment variable</h2>
+  <p><code>OLLAMA_MODELS</code> is documented in Ollama's FAQ and is read by the server. For the Mac app, the FAQ says to set environment variables with <code>launchctl setenv</code> and restart the app. A value set that way is not kept across a restart of the Mac unless something sets it again; that part comes from a community guide, not from Ollama. Outboard never edits your shell or login files. Where a tool needs the variable, it shows the line as text for you to copy:</p>
+  <pre><code>export OLLAMA_MODELS=&#x27;/Volumes/YourDrive/models&#x27;</code></pre>
+
+  <h2 id="link">The link</h2>
+  <p>The third way is to replace <code>~/.ollama/models</code> with a link to a copy on the drive. It is a community method, not an Ollama setting. It is the one Outboard automates, and it marks the models "Large to download again" because that is what losing them means.</p>
+
+  <h2 id="away">What happens when the drive is away</h2>
+  <p>Ollama's app fails open. In its source at version 0.35.1, when the app starts its server it passes on the configured models path only if that path can be read; otherwise it logs "models path not accessible, using default" and starts with the default store. With the drive missing you get an empty store on the Mac's own disk, the models seem to have vanished, and a pull downloads them there.</p>
+  <p>That statement is about the app's configured path. For the link method, Outboard puts a read-only note where the folder was while the drive is away, meant to make Ollama report an error instead of starting an empty models folder. Whether Ollama does that when it finds a note in the path has not been tried on a real Mac. Not yet tried on a real Mac.</p>
+
+  <h2 id="quit">Quit first</h2>
+  <p>Quit the Ollama app, including its menu bar item, and stop any <code>ollama</code> command. The app may start itself again, so check before you move anything.</p>
+
+  <h2 id="others">Hugging Face, llama.cpp and LM Studio, briefly</h2>
+  <ul>
+    <li><b>Hugging Face:</b> move the hub cache with <code>HF_HUB_CACHE</code> (and <code>HF_XET_CACHE</code>), not <code>HF_HOME</code>, which also holds your access token. The hub cache is built from relative links between snapshots and blobs, so a copy that follows links duplicates every blob; Outboard's copy keeps links as links and compares where they point.</li>
+    <li><b>llama.cpp:</b> its cache is <code>LLAMA_CACHE</code> if set, then the Hugging Face variables, then <code>~/Library/Caches/llama.cpp</code>.</li>
+    <li><b>LM Studio:</b> it has a models directory setting of its own; Outboard shows the steps and moves nothing.</li>
+  </ul>
+
+  <h2 id="outboard">What Outboard tells you before it moves Ollama's models</h2>
+  <p>From the consent sheet, word for word:</p>
+  <ul><li>While your Outboard drive is unplugged, Ollama will not see your models, and it may look as if they were deleted. They are on the drive. While Outboard is running, it puts a note where the folder was, which is meant to make Ollama report an error instead of starting an empty models folder.</li><li>Your original stays as models.before-move until you confirm.</li><li>This is a community method. Ollama&#x27;s own Settings has a Model location field; Outboard does not change it.</li></ul>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="sources">
+    <li>Ollama docs, <a href="https://docs.ollama.com/faq" rel="noopener">FAQ</a> (default folder, <code>OLLAMA_MODELS</code>, <code>launchctl setenv</code> for the Mac app).</li>
+    <li>Ollama source, <a href="https://github.com/ollama/ollama/blob/v0.35.1/app/server/server.go" rel="noopener"><code>app/server/server.go</code></a> at v0.35.1 (the models path check) and <a href="https://github.com/ollama/ollama/blob/v0.35.1/app/ui/app/src/components/Settings.tsx" rel="noopener"><code>Settings.tsx</code></a> (the Model location field), read 3 October 2026.</li>
+    <li>Hugging Face, <a href="https://huggingface.co/docs/huggingface_hub/package_reference/environment_variables" rel="noopener">environment variables</a> and <a href="https://huggingface.co/docs/huggingface_hub/guides/manage-cache" rel="noopener">understanding caching</a>.</li>
+    <li>llama.cpp source, <code>common/common.cpp</code> (<code>LLAMA_CACHE</code> and the default cache folder).</li>
+    <li>runaihome.com, <a href="https://runaihome.com/blog/ollama-change-model-storage-location-free-c-drive-2026/" rel="noopener">a community guide</a> (the setting being lost after a restart; not an Ollama source).</li>
+  </ul>
+  <p class="fine">Outboard is not affiliated with or endorsed by Ollama or any app it lists. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+</article>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/outboard/download/">Download</a></li>
+          <li><a href="/outboard/changelog/">Changelog</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard" rel="noopener">Source code</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>How it works</h2>
+        <ul>
+          <li><a href="/outboard/how-a-move-works/">How a move works</a></li>
+          <li><a href="/outboard/what-it-moves/">What it moves, guides, refuses</a></li>
+          <li><a href="/outboard/#guard">The Drive Guard</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Guides</h2>
+        <ul>
+          <li><a href="/outboard/guides/move-xcode-deriveddata-to-external-drive/">Xcode build data</a></li>
+          <li><a href="/outboard/guides/run-ollama-models-from-external-ssd-mac/">Ollama models</a></li>
+          <li><a href="/outboard/guides/unplug-external-drive-that-holds-app-data-mac/">If you unplug it</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Help</h2>
+        <ul>
+          <li><a href="https://github.com/EverydayOpen/outboard/issues/new?template=move-went-wrong.yml" rel="noopener">A move went wrong</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard/issues/new?template=recipe-result.yml" rel="noopener">Report a move you tried</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard/security/policy" rel="noopener">Security policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="official"><svg aria-hidden="true"><use href="#i-check"/></svg><span>The only official site is https://everydayopen.github.io/outboard. Downloads come only from github.com/EverydayOpen/outboard/releases.</span></p>
+    <p class="fine"><a class="tag plain" href="/outboard/changelog/">1.0 coming soon</a>© 2026 EverydayOpen. Outboard is free and open source under the MIT License.</p>
+    <p class="fine">Outboard is not affiliated with or endorsed by any app it lists. Their names appear only to say what Outboard knows about; no vendor logos are used. Apple, Mac, macOS, Xcode and Time Machine are trademarks of Apple Inc. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+  </div>
+</footer>
+</body>
+</html>

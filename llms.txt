@@ -1,0 +1,36 @@
+# Outboard
+
+> A storage planner for Macs with an external SSD. Measure, move with a check, keep the original until you say so.
+
+Outboard is a free, open-source Mac app (MIT License; macOS 13 or later, Apple silicon and Intel). It measures the big folders that apps keep on your Mac, copies the ones with a known method to an external drive you choose, compares every file by size and SHA-256, keeps the original (renamed) until you confirm, and writes every step to a log. A Drive Guard, while the app runs, announces a missing drive and puts a note where the folder was. Outboard is not affiliated with or endorsed by any app it lists. (no-claim-ok: this sentence says we make no such claim)
+
+Status: In development. No public release yet. Nothing has run on a real Mac yet, so read everything described here as the design, not as proof that it works. The changelog will say what testers have tried. Not yet tried on a real Mac.
+
+Trust box
+- No network, no telemetry, no account, no helper, no administrator password. It makes no claim about speed and does not configure new installs automatically.
+- Nothing is deleted: the original is renamed and, after you confirm, moved to the Trash. If the log cannot be written, nothing moves.
+- 7 moves it does itself (hidden in the app until you turn on "Show moves not yet tried on a real Mac"), 8 guided by the app itself, 9 refused with the reason shown.
+- Never moved: Mail, Safari, Messages and Notes data, iCloud Drive, sandboxed containers, Homebrew, your home folder, the whole Caches folder, app bundles.
+- It cannot stop you unplugging a drive or make that harmless. What each app does when it finds a note instead of its folder has not been tried on a real Mac.
+
+- Download: https://everydayopen.github.io/outboard/download/
+- Source and support: https://github.com/EverydayOpen/outboard
+- Report a move that went wrong: https://github.com/EverydayOpen/outboard/issues/new?template=move-went-wrong.yml
+
+## Pages
+
+- [Outboard for Mac: move big app folders to an external SSD, compared file by file](https://everydayopen.github.io/outboard/): Outboard finds the big folders apps keep on your Mac and, for the apps where the method is known, moves them to your external SSD: copied, compared file by file, the original kept until you confirm, every step logged. Free, open source, offline.
+- [What's New in Outboard](https://everydayopen.github.io/outboard/changelog/): Every Outboard release and what changed in it, including what testers have tried on real Macs. Also available as an RSS feed.
+- [Download Outboard for Mac](https://everydayopen.github.io/outboard/download/): Download Outboard for Mac, free: measure the big folders apps keep on your Mac and move the ones with a known method to your external drive. Requires macOS 13 or later. Unsigned beta builds come from GitHub Releases only.
+- [Guides: putting app data on an external drive on a Mac · Outboard](https://everydayopen.github.io/outboard/guides/): Plain answers, with sources, about moving Xcode build data and Ollama models to an external SSD, and what happens to apps when that drive disappears. Each guide works without Outboard.
+- [How to move Xcode DerivedData to an external drive](https://everydayopen.github.io/outboard/guides/move-xcode-deriveddata-to-external-drive/): Xcode has its own setting for where DerivedData lives. How to use it, the two documented problems with external drives, why Xcode Archives are different, and what Outboard does. Sources included.
+- [Can I run Ollama models from an external SSD?](https://everydayopen.github.io/outboard/guides/run-ollama-models-from-external-ssd-mac/): Yes, in three ways. What each one changes, why you should move ~/.ollama/models and never ~/.ollama itself, what the Ollama app does when the drive is missing, and where Hugging Face, llama.cpp and LM Studio differ. Sources included.
+- [What happens if I unplug an external drive that holds app data?](https://everydayopen.github.io/outboard/guides/unplug-external-drive-that-holds-app-data-mac/): Apps that keep data on an external drive fail open when it goes missing. How drives go missing on a Mac, what a guard can and cannot do, what Outboard does while it runs, and what to do yourself. Sources included.
+- [How an Outboard move works, and what it cannot do](https://everydayopen.github.io/outboard/how-a-move-works/): The steps of a move (checks, copy, compare, switch, confirm or roll back), the rules every step follows, what Outboard reads and never does, and the limits that apply.
+- [What Outboard moves, guides and refuses](https://everydayopen.github.io/outboard/what-it-moves/): The catalogue: the folders Outboard can move itself, the ones it only guides you through, and the ones it will not touch, each with where it lives, what happens when the drive is away, and the reason.
+
+## Feeds
+
+- [Changelog RSS](https://everydayopen.github.io/outboard/feed.xml)
+
+Outboard is not affiliated with or endorsed by any app it lists. App names appear only to say what Outboard knows about. (no-claim-ok: this sentence says we make no such claim)

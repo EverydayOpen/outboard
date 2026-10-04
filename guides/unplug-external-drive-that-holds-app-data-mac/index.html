@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>What happens if I unplug an external drive that holds app data?</title>
+<meta name="description" content="Apps that keep data on an external drive fail open when it goes missing. How drives go missing on a Mac, what a guard can and cannot do, what Outboard does while it runs, and what to do yourself. Sources included.">
+<link rel="canonical" href="https://everydayopen.github.io/outboard/guides/unplug-external-drive-that-holds-app-data-mac/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1217" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Outboard">
+<meta property="og:title" content="What happens if I unplug an external drive that holds app data?">
+<meta property="og:description" content="Apps that keep data on an external drive fail open when it goes missing. How drives go missing on a Mac, what a guard can and cannot do, what Outboard does while it runs, and what to do yourself. Sources included.">
+<meta property="og:url" content="https://everydayopen.github.io/outboard/guides/unplug-external-drive-that-holds-app-data-mac/">
+<meta property="og:image" content="https://everydayopen.github.io/outboard/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Sample data: the Outboard Storage Plan card. Your Mac could free up to 87 GB: Xcode build data 41 GB, Ollama models 30 GB, iPhone backups 16 GB. Measured on this Mac. Nothing was moved.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="/outboard/favicon.png">
+<link rel="apple-touch-icon" href="/outboard/apple-touch-icon.png">
+<link rel="alternate" type="application/rss+xml" title="Outboard changelog" href="/outboard/feed.xml">
+<link rel="stylesheet" href="/outboard/styles.css">
+<script src="/outboard/motion.js" defer></script>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M4.5 19.5h15"/></symbol>
+  <symbol id="i-mark" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2.5" y="8" width="9.5" height="9.5" rx="2.6"/><rect x="16" y="10.5" width="6" height="4.5" rx="2.25"/><path d="M12 12.75h4"/></g><circle cx="4.6" cy="4.4" r="1.7" fill="currentColor"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></g></symbol>
+  <symbol id="k-build" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5l8-8"/><path d="M10.5 5.5l3.5-2 6 6-2 3.5-3-.5-2.5 2.5-4.5-4.5 2.5-2.5z"/></g></symbol>
+  <symbol id="k-model" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></g></symbol>
+  <symbol id="k-backup" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M10.5 18h3"/></g></symbol>
+  <symbol id="k-cache" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4.5 7.5h15M4.5 12h15M4.5 16.5h15"/></symbol>
+  <symbol id="k-archive" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8.5v10a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-10M3 4.5h18v4H3zM10 12.5h4"/></g></symbol>
+  <symbol id="k-photos" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l4.5-4 3 2.5 3-3.5 5.5 5"/></g></symbol>
+  <symbol id="k-music" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V6l10-2v11"/><circle cx="6.5" cy="17" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></g></symbol>
+  <symbol id="k-film" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10h17v8.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M3.5 10l1.2-4.8 16 1.3-.6 3.5M9 5.7l-1 4.3M14.5 6.2L13.5 10"/></g></symbol>
+  <symbol id="k-game" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 8h9a4.5 4.5 0 0 1 4.4 5.5l-.4 2a2.7 2.7 0 0 1-4.7 1l-1.3-1.5H9.5l-1.3 1.5a2.7 2.7 0 0 1-4.7-1l-.4-2A4.5 4.5 0 0 1 7.5 8z"/><path d="M8 10.8v3M6.5 12.3h3M16 11.6h.01M18 13.2h.01"/></g></symbol>
+  <symbol id="k-sdk" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5"/></symbol>
+  <symbol id="k-never" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.5V6.5a1.5 1.5 0 0 1 3 0v4.5m0 0V5a1.5 1.5 0 0 1 3 0v6m0 0V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-.5a5 5 0 0 1-4-2L4.7 13.2a1.4 1.4 0 0 1 2.2-1.7L8 12.5"/></g></symbol>
+</svg>
+<header class="site-header">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="/outboard/"><img src="/outboard/favicon.png" width="28" height="28" alt=""><span>Outboard</span></a>
+    <ul class="nav-links">
+      <li><a href="/outboard/how-a-move-works/">How it works</a></li>
+      <li><a href="/outboard/what-it-moves/">What it moves</a></li>
+      <li><a href="/outboard/guides/">Guides</a></li>
+    </ul>
+    <a class="button secondary small" href="https://github.com/EverydayOpen/outboard" rel="noopener">Source</a>
+    <a class="button small" href="/outboard/download/">Download</a>
+  </nav>
+</header>
+<main id="main" tabindex="-1">
+<article class="read prose guide">
+  <p class="eyebrow"><b>G3</b> · Guide · Checked 3 October 2026 · macOS</p>
+  <h1>What happens if I unplug an external drive that holds app data?</h1>
+
+  <div class="summary">
+    <h2>The short answer</h2>
+    <ol>
+      <li>Every way of putting app data on a drive fails open when the drive is missing: the app does its first-launch thing on the Mac's own disk, with an empty library, an empty model store or a default folder.</li>
+      <li>Drives go missing more often than people expect, including by themselves, and no app can make that harmless.</li>
+      <li>Eject in Finder before you unplug, plug straight in rather than through a hub, and keep a backup of anything you cannot replace.</li>
+    </ol>
+  </div>
+
+  <h2 id="apps">What apps do</h2>
+  <ul>
+    <li><b>Photos:</b> Apple's page on moving a library describes Photos creating a new empty library when the one it was using is not available.</li>
+    <li><b>Ollama:</b> in the app's source, a models path that cannot be read is replaced by the default folder, so you get an empty store. See <a href="/outboard/guides/run-ollama-models-from-external-ssd-mac/#away">G2</a>.</li>
+    <li><b>Docker Desktop:</b> its own disk image setting has a long record of problems on external drives, including failing at login because the volume was not mounted yet (docker/for-mac issue 7437). Outboard does not move its data.</li>
+    <li><b>A link that points at nothing</b> fails closed for apps that try to open or create files under it, but not for apps that remove a folder and make a new one: those replace the link with a real folder and quietly fill the Mac's disk. This is reasoning from how links work, not a result for each app.</li>
+  </ul>
+
+  <h2 id="missing">How drives go missing</h2>
+  <ul>
+    <li><b>Sleep.</b> Many people report external drives ejecting during sleep and "Disk Not Ejected Properly" on wake, across macOS versions (Apple Community thread 254322044). That is forum evidence. Apple's note 101847 is about internal SATA drives in the Mac Pro (2023) and is not evidence about external drives.</li>
+    <li><b>Not mounted yet.</b> At login the drive may not be mounted when an app starts. An encrypted drive stays locked until it is unlocked.</li>
+    <li><b>On purpose.</b> A laptop that leaves the desk. That is normal use, and it is why a drive-away state has to be quiet and recoverable.</li>
+    <li><b>Renamed, reformatted or replaced.</b> If a stale <code>/Volumes/Name</code> folder exists, a second drive with the same name mounts as "Name 1" (user reports). A link that goes by name then points at the wrong drive.</li>
+    <li><b>The drive dies.</b> Time Machine skips external drives by default (Macworld), so the data may have no second copy.</li>
+  </ul>
+
+  <h2 id="while">What Outboard does while it runs</h2>
+  <ul>
+    <li><b>Unplugged or ejected.</b> After a 5-second pause in case the drive comes straight back, the link is moved into Outboard's own folder and a read-only note is put where the folder was. For Xcode build data the setting is written back instead, once Xcode is closed. The note reads:</li>
+  </ul>
+  <p class="note file"><span class="label">Note</span>Outboard moved this folder&#x27;s contents to the drive &quot;Outboard&quot;. The drive isn&#x27;t connected, so this note is here instead. Outboard puts things back when the drive returns, but only while Outboard is running, so open Outboard if it is closed. This note does not check the data on the drive.</p>
+  <ul>
+    <li><b>Back after a clean eject.</b> Outboard checks the drive's identity (its UUID and a sentinel file), runs a quick check against the list it made when it copied, hashes a sample of 200 files, and then puts the link back.</li>
+    <li><b>Back after a removal without ejecting.</b> It asks you to press "Check and reconnect", which compares every file that has not changed since it was copied. Files that changed since are listed, not compared, because the app may have written to them.</li>
+    <li><b>Something new in the way.</b> If an app made a new folder where the note or link was, Outboard touches nothing and asks you to choose.</li>
+  </ul>
+  <p>Guard is on while Outboard is running. It watches your drives and keeps a notice in the menu bar.</p>
+
+  <h2 id="cannot">What it cannot do</h2>
+  <ul>
+    <li>The time between the unplug and the note is 5 seconds or more while Outboard runs, and open-ended when it isn't. If you quit, nothing watches your drives. If a drive is unplugged, apps that use it will see a missing folder until Outboard runs again.</li>
+    <li>It cannot veto an eject, and it cannot stop you pulling a cable.</li>
+    <li>Apps that kept a file open on the drive probably need a restart after it returns, because a returning drive is a new mount. This is by reasoning, not from a source we fetched, and not tried on a real Mac.</li>
+    <li>macOS can block an app's access to a removable volume (the "Removable Volumes" privacy category). Outboard shows that as "macOS blocked access to the drive", never as "drive missing".</li>
+  </ul>
+
+  <h2 id="todo">What to do</h2>
+  <ul>
+    <li>Eject in Finder before you unplug. A pull works as far as the note goes, but it is the case that needs the full check on return.</li>
+    <li>Use a direct cable rather than a hub where you can, and look at your display-off sleep setting: the one that keeps disks from sleeping when the display is off is the setting people most often report helping. Outboard doesn't change your power settings.</li>
+    <li>If the drive holds anything you cannot replace, add it to Time Machine or keep another copy. An encrypted APFS volume is the format Outboard prefers for backups.</li>
+    <li>If a move went wrong, <a href="https://github.com/EverydayOpen/outboard/issues/new?template=move-went-wrong.yml" rel="noopener">tell us</a>; the activity log in the app lists every step with the time it happened.</li>
+  </ul>
+  <p class="tried">Not yet tried on a real Mac: nothing on this page about Outboard's own behaviour has been run on one.</p>
+
+  <h2 id="sources">Sources</h2>
+  <ul class="sources">
+    <li>Apple, <a href="https://support.apple.com/en-us/108345" rel="noopener">Move your Photos library</a>.</li>
+    <li>Apple Community, <a href="https://discussions.apple.com/thread/254322044" rel="noopener">thread 254322044</a> (drives ejecting during sleep) and Apple support note <a href="https://support.apple.com/en-il/101847" rel="noopener">101847</a> (Mac Pro, internal SATA drives).</li>
+    <li>docker/for-mac, <a href="https://github.com/docker/for-mac/issues/7437" rel="noopener">issue 7437</a> (failing at login when the volume is not mounted).</li>
+    <li>Apple, <a href="https://support.apple.com/guide/mac-help/disks-you-can-use-with-time-machine-mh15139/mac" rel="noopener">Disks you can use with Time Machine</a>, and Macworld, <a href="https://www.macworld.com/article/229391/how-to-make-sure-time-machine-backs-up-external-drives.html" rel="noopener">how to make sure Time Machine backs up external drives</a>.</li>
+    <li>Ollama source at v0.35.1, <a href="https://github.com/ollama/ollama/blob/v0.35.1/app/server/server.go" rel="noopener"><code>app/server/server.go</code></a>.</li>
+  </ul>
+  <p class="fine">Outboard is not affiliated with or endorsed by any app it lists. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+</article>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h2>Product</h2>
+        <ul>
+          <li><a href="/outboard/download/">Download</a></li>
+          <li><a href="/outboard/changelog/">Changelog</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard" rel="noopener">Source code</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>How it works</h2>
+        <ul>
+          <li><a href="/outboard/how-a-move-works/">How a move works</a></li>
+          <li><a href="/outboard/what-it-moves/">What it moves, guides, refuses</a></li>
+          <li><a href="/outboard/#guard">The Drive Guard</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Guides</h2>
+        <ul>
+          <li><a href="/outboard/guides/move-xcode-deriveddata-to-external-drive/">Xcode build data</a></li>
+          <li><a href="/outboard/guides/run-ollama-models-from-external-ssd-mac/">Ollama models</a></li>
+          <li><a href="/outboard/guides/unplug-external-drive-that-holds-app-data-mac/">If you unplug it</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Help</h2>
+        <ul>
+          <li><a href="https://github.com/EverydayOpen/outboard/issues/new?template=move-went-wrong.yml" rel="noopener">A move went wrong</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard/issues/new?template=recipe-result.yml" rel="noopener">Report a move you tried</a></li>
+          <li><a href="https://github.com/EverydayOpen/outboard/security/policy" rel="noopener">Security policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="official"><svg aria-hidden="true"><use href="#i-check"/></svg><span>The only official site is https://everydayopen.github.io/outboard. Downloads come only from github.com/EverydayOpen/outboard/releases.</span></p>
+    <p class="fine"><a class="tag plain" href="/outboard/changelog/">1.0 coming soon</a>© 2026 EverydayOpen. Outboard is free and open source under the MIT License.</p>
+    <p class="fine">Outboard is not affiliated with or endorsed by any app it lists. Their names appear only to say what Outboard knows about; no vendor logos are used. Apple, Mac, macOS, Xcode and Time Machine are trademarks of Apple Inc. <!-- no-claim-ok: the sentence says we make no such claim --></p>
+  </div>
+</footer>
+</body>
+</html>
