@@ -129,7 +129,7 @@ jobs:
           for n in e5-diskutil-info-volume e5-tmutil-destinationinfo tmutil-destinationinfo t5 volumes-writable; do echo "== $n: exit $(cat out/$n.exit 2>/dev/null)"; head -5 "out/$n.stdout" 2>/dev/null; head -3 "out/$n.stderr" 2>/dev/null; done
           grep -E "skipped|XCTSkip" out/swift-test.log || true
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: probe-${{ matrix.runner }}
